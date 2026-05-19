@@ -8,853 +8,696 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root {
-  --or:#F59901; --dk:#2D2D2D; --lt:#F9CD92; --pu:#9c27b0;
-  --bl:#1565c0; --gr:#27ae60; --rd:#e74c3c; --bg:#F9F7F4;
-  --wh:#ffffff; --bd:#eee; --sm:#888;
-}
-*,*::before,*::after { box-sizing:border-box; margin:0; padding:0 }
-body { font-family:"DM Sans",Arial,sans-serif; background:var(--bg); color:var(--dk); font-size:13px }
-
-/* ── HEADER ── */
-.hdr { background:var(--dk); padding:0 24px; display:flex; align-items:center; justify-content:space-between; min-height:56px; gap:10px; flex-wrap:wrap }
-.brand { font-family:"DM Mono",monospace; font-size:15px; font-weight:500; color:var(--or) }
-.hdr-badges { display:flex; gap:7px; align-items:center; flex-wrap:wrap }
-.bdg { padding:3px 11px; border-radius:20px; font-size:11px; font-weight:700 }
-.bdg-or { background:var(--or); color:var(--dk) }
-.bdg-gr { background:var(--gr); color:#fff }
-.status-wrap { display:flex; align-items:center; gap:6px; font-size:11px; color:#aaa }
-.status-dot { width:8px; height:8px; border-radius:50%; background:#555; transition:background .3s }
-.status-dot.on { background:var(--gr) }
-
-/* ── UPLOAD SCREEN ── */
-#upload-screen { display:flex; flex-direction:column; align-items:center; padding:40px 24px; gap:20px; min-height:calc(100vh - 56px) }
-.up-hero { text-align:center }
-.up-hero h2 { font-size:22px; font-weight:700; margin-bottom:8px }
-.up-hero p { font-size:13px; color:var(--sm); max-width:520px; margin:0 auto; line-height:1.7 }
-.up-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; width:100%; max-width:720px }
-.up-card { background:var(--wh); border:2px dashed var(--bd); border-radius:14px; padding:26px 20px; text-align:center; cursor:pointer; transition:all .2s; position:relative; overflow:hidden }
-.up-card:hover,.up-card.drag { border-color:var(--or); background:#fffdf5 }
-.up-card.done { border-color:var(--gr); border-style:solid; background:#f0fdf4 }
-.up-card input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer }
-.uc-ico { font-size:32px; display:block; margin-bottom:10px }
-.uc-title { font-size:13px; font-weight:700; margin-bottom:6px }
-.uc-sub { font-size:11px; color:var(--sm); line-height:1.6 }
-.uc-ok { font-size:12px; color:var(--gr); font-weight:700; margin-top:8px; display:none }
-.up-steps { background:var(--wh); border:1px solid var(--bd); border-radius:12px; padding:18px 22px; width:100%; max-width:720px }
-.up-steps h3 { font-size:13px; font-weight:700; margin-bottom:12px }
-.step { display:flex; gap:12px; align-items:flex-start; margin-bottom:9px; font-size:12px; color:#555; line-height:1.5 }
-.step-n { background:var(--or); color:var(--dk); border-radius:50%; width:22px; height:22px; min-width:22px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px }
-.btn-go { background:var(--or); color:var(--dk); border:none; padding:13px 38px; border-radius:30px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all .2s }
-.btn-go:hover { background:#e08800; transform:translateY(-1px); box-shadow:0 4px 16px rgba(245,153,1,.3) }
-.btn-go:disabled { opacity:.4; cursor:not-allowed; transform:none }
-.up-progress { width:100%; max-width:420px; height:6px; background:var(--bd); border-radius:10px; overflow:hidden; display:none }
-.up-fill { height:100%; background:var(--or); border-radius:10px; width:0; transition:width .3s }
-.up-err { color:var(--rd); font-size:12px; background:#fdf0f0; border:1px solid #fbb; border-radius:8px; padding:10px 14px; max-width:720px; text-align:center; display:none }
-.up-note { font-size:11px; color:#bbb; text-align:center; max-width:520px; line-height:1.8 }
-
-/* ── DASHBOARD ── */
-#dashboard { display:none }
-.tabs { background:var(--wh); border-bottom:1.5px solid var(--bd); display:flex; overflow-x:auto; padding:0 16px }
-.tab { padding:10px 14px; font-size:12px; font-weight:600; cursor:pointer; border:none; background:none; border-bottom:2.5px solid transparent; color:#999; white-space:nowrap; font-family:inherit }
-.tab.active { color:var(--or); border-bottom-color:var(--or) }
-.tab.tg { color:var(--gr) } .tab.tg.active { color:var(--gr); border-bottom-color:var(--gr) }
-.tab.tb { color:var(--bl) } .tab.tb.active { color:var(--bl); border-bottom-color:var(--bl) }
-.tab.tu { background:var(--or); color:var(--dk); border-radius:20px; margin:6px 4px; padding:5px 14px; font-weight:700 }
-.tab.tu:hover,.tab.tu.active { background:#e08800; border-bottom-color:transparent; color:var(--dk) }
-.tab:hover:not(.tu) { color:var(--dk) }
-.page { display:none; padding:20px 24px; max-width:1300px } .page.active { display:block }
-
-/* ── LAYOUT ── */
-.sec { font-size:10px; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:#bbb; margin:20px 0 11px; display:flex; align-items:center; gap:8px }
-.sec::before { content:""; display:block; width:3px; height:13px; background:var(--or); border-radius:2px }
-.sec.sbl::before { background:var(--bl) } .sec.spu::before { background:var(--pu) } .sec.sgr::before { background:var(--gr) }
-.kg { display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); gap:11px; margin-bottom:20px }
-.kpi { background:var(--wh); border-radius:11px; padding:14px 16px; border:1px solid var(--bd); position:relative; overflow:hidden }
-.kpi::after { content:""; position:absolute; top:0; left:0; right:0; height:3px; background:var(--bd) }
-.kpi.ka::after { background:var(--or) } .kpi.kg2::after { background:var(--gr) }
-.kpi.kb::after { background:var(--bl) } .kpi.kp::after { background:var(--pu) } .kpi.kr::after { background:var(--rd) }
-.klbl { font-size:10px; color:#aaa; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px }
-.kval { font-size:22px; font-weight:700; color:var(--dk); line-height:1.2 }
-.ksub { font-size:10px; color:#bbb; margin-top:3px }
-.row2 { display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-bottom:16px }
-.card { background:var(--wh); border-radius:11px; padding:16px; border:1px solid var(--bd) }
-.card.full { grid-column:1/-1 }
-.ctitle { font-size:10px; font-weight:700; color:#bbb; text-transform:uppercase; letter-spacing:.5px; margin-bottom:11px }
-.leg { display:flex; flex-wrap:wrap; gap:9px; margin-bottom:8px; font-size:11px; color:#999 }
-.leg span { display:flex; align-items:center; gap:4px }
-.dot { width:8px; height:8px; border-radius:2px; flex-shrink:0 }
-
-/* ── TABLES ── */
-table { width:100%; border-collapse:collapse; font-size:12px }
-thead th { background:var(--dk); color:#fff; padding:7px 9px; text-align:left; font-size:11px; font-weight:500 }
-thead th.hb { background:var(--bl) } thead th.hp { background:var(--pu) } thead th.hg { background:var(--gr) }
-tbody tr:nth-child(even) { background:#fafafa }
-tbody tr:hover { background:#fff8ec }
-tbody td { padding:6px 9px; border-bottom:1px solid #f2f2f2 }
-.pill { display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700 }
-.pg { background:#e8f5e9; color:#1b5e20 } .po { background:#fff3e0; color:#e65100 }
-.pr { background:#fce4ec; color:#ad1457 } .pd { background:var(--dk); color:var(--or) }
-.tr-tot td { border-top:2px solid var(--dk); background:#f4f4f4!important; font-weight:700 }
-.tr-avg td { border-top:2px dashed var(--or); background:#fff8ec!important; font-weight:700 }
-.tr-sub td { background:#fafafa!important; font-weight:600; border-top:1px dashed var(--bd) }
-.scr { overflow-x:auto; margin-bottom:14px }
-
-/* ── INFOBOXES ── */
-.ibox { border-radius:0 9px 9px 0; padding:11px 15px; margin-bottom:10px; border-left:3px solid var(--or); background:#fff8ec }
-.ibox.ibl { border-left-color:var(--bl); background:#e8f0fe }
-.ibox.iwarn { border-left-color:var(--rd); background:#fdf0f0 }
-.ibox.igood { border-left-color:var(--gr); background:#f0fdf4 }
-.ibox .it { font-weight:700; font-size:12px; margin-bottom:3px }
-.ibox p { font-size:12px; color:#555; line-height:1.55 }
-.mbbar { display:flex; gap:7px; margin-bottom:14px; flex-wrap:wrap }
-.mb { padding:5px 14px; border:1.5px solid var(--bd); border-radius:20px; font-size:12px; cursor:pointer; background:var(--wh); color:#555; font-weight:600; font-family:inherit }
-.mb.active { background:var(--dk); color:var(--or); border-color:var(--dk) }
-.ncb { background:#e3f2fd; border:1.5px solid var(--bl); border-radius:11px; padding:14px 18px; margin-bottom:20px; display:flex; align-items:flex-start; gap:12px }
-.ncb .ico { font-size:26px; line-height:1 }
-.ncb .txt { font-size:12px; color:var(--bl) }
-.ncb strong { font-size:17px; display:block; color:#0d47a1; margin-bottom:3px }
-.ig2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px }
-
-/* ── DOWNLOAD BUTTONS ── */
-.dl-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:16px }
-.dl-btn { background:var(--wh); border:1.5px solid var(--bd); border-radius:10px; padding:12px 14px; cursor:pointer; text-align:center; font-family:inherit; font-size:12px; font-weight:600; color:var(--dk); transition:all .15s; display:flex; flex-direction:column; align-items:center; gap:6px }
-.dl-btn:hover { border-color:var(--or); background:#fffdf5; transform:translateY(-1px) }
-.dl-btn-main { background:var(--or); color:var(--dk); border:none; padding:10px 22px; border-radius:24px; font-family:inherit; font-size:12px; font-weight:700; cursor:pointer; transition:all .15s; margin-right:8px; margin-bottom:8px }
-.dl-btn-main:hover { background:#e08800 }
-
-@media(max-width:680px) { .row2 { grid-template-columns:1fr } .ig2 { grid-template-columns:1fr } .up-grid { grid-template-columns:1fr } .page { padding:12px } }
+:root{--or:#F59901;--dk:#2D2D2D;--lt:#F9CD92;--pu:#9c27b0;--bl:#1565c0;--gr:#27ae60;--rd:#e74c3c;--bg:#F9F7F4;--wh:#fff;--bd:#eee;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",Arial,sans-serif;background:var(--bg);color:var(--dk);font-size:13px}
+.hdr{background:var(--dk);padding:0 24px;display:flex;align-items:center;justify-content:space-between;min-height:56px;gap:10px;flex-wrap:wrap}
+.brand{font-family:"DM Mono",monospace;font-size:15px;font-weight:500;color:var(--or)}
+.bdg{padding:3px 11px;border-radius:20px;font-size:11px;font-weight:700}
+.bdg-or{background:var(--or);color:var(--dk)}
+.sw{display:flex;align-items:center;gap:6px;font-size:11px;color:#aaa}
+.sd{width:8px;height:8px;border-radius:50%;background:#555;transition:background .3s}
+.sd.on{background:var(--gr)}
+#upload-screen{display:flex;flex-direction:column;align-items:center;padding:40px 24px;gap:20px;min-height:calc(100vh - 56px)}
+.uh2{font-size:22px;font-weight:700;text-align:center}
+.up{font-size:13px;color:#888;text-align:center;max-width:520px;line-height:1.7}
+.ugrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%;max-width:720px}
+.uc{background:var(--wh);border:2px dashed var(--bd);border-radius:14px;padding:26px 20px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.uc:hover,.uc.drag{border-color:var(--or);background:#fffdf5}
+.uc.done{border-color:var(--gr);border-style:solid;background:#f0fdf4}
+.uc input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.uco{font-size:32px;display:block;margin-bottom:10px}
+.uct{font-size:13px;font-weight:700;margin-bottom:6px}
+.ucs{font-size:11px;color:#888;line-height:1.6}
+.ucok{font-size:12px;color:var(--gr);font-weight:700;margin-top:8px;display:none}
+.steps{background:var(--wh);border:1px solid var(--bd);border-radius:12px;padding:18px 22px;width:100%;max-width:720px}
+.steps h3{font-size:13px;font-weight:700;margin-bottom:12px}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:9px;font-size:12px;color:#555;line-height:1.5}
+.stn{background:var(--or);color:var(--dk);border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px}
+.bgo{background:var(--or);color:var(--dk);border:none;padding:13px 38px;border-radius:30px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.bgo:hover{background:#e08800;transform:translateY(-1px)}
+.bgo:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.upbar{width:100%;max-width:420px;height:6px;background:var(--bd);border-radius:10px;overflow:hidden;display:none}
+.upfill{height:100%;background:var(--or);border-radius:10px;width:0;transition:width .3s}
+.uperr{color:var(--rd);font-size:12px;background:#fdf0f0;border:1px solid #fbb;border-radius:8px;padding:10px 14px;max-width:720px;text-align:center;display:none}
+.unote{font-size:11px;color:#bbb;text-align:center;max-width:520px;line-height:1.8}
+#dashboard{display:none}
+.tabs{background:var(--wh);border-bottom:1.5px solid var(--bd);display:flex;overflow-x:auto;padding:0 16px}
+.tab{padding:10px 14px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;color:#999;white-space:nowrap;font-family:inherit;transition:color .15s}
+.tab.active{color:var(--or);border-bottom-color:var(--or)}
+.tab.tg{color:var(--gr)}.tab.tg.active{color:var(--gr);border-bottom-color:var(--gr)}
+.tab.tb{color:var(--bl)}.tab.tb.active{color:var(--bl);border-bottom-color:var(--bl)}
+.tab.tu{background:var(--or);color:var(--dk);border-radius:20px;margin:6px 4px;padding:5px 14px;font-weight:700;border-bottom:none}
+.tab:hover:not(.tu){color:var(--dk)}
+.page{display:none;padding:20px 24px;max-width:1300px}.page.active{display:block}
+.sec{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#bbb;margin:20px 0 11px;display:flex;align-items:center;gap:8px}
+.sec::before{content:"";display:block;width:3px;height:13px;background:var(--or);border-radius:2px}
+.sec.sbl::before{background:var(--bl)}.sec.spu::before{background:var(--pu)}.sec.sgr::before{background:var(--gr)}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px;margin-bottom:20px}
+.kpi{background:var(--wh);border-radius:11px;padding:14px 16px;border:1px solid var(--bd);position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--bd)}
+.kpi.ka::after{background:var(--or)}.kpi.kg2::after{background:var(--gr)}
+.kpi.kb::after{background:var(--bl)}.kpi.kp::after{background:var(--pu)}.kpi.kr::after{background:var(--rd)}
+.klbl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kval{font-size:22px;font-weight:700;color:var(--dk);line-height:1.2}
+.ksub{font-size:10px;color:#bbb;margin-top:3px}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}
+.cc{background:var(--wh);border-radius:11px;padding:16px;border:1px solid var(--bd)}
+.cc.full{grid-column:1/-1}
+.cct{font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:11px}
+.leg{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:8px;font-size:11px;color:#999}
+.leg span{display:flex;align-items:center;gap:4px}
+.dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--dk);color:#fff;padding:7px 9px;text-align:left;font-size:11px;font-weight:500}
+thead th.hb{background:var(--bl)}thead th.hp{background:var(--pu)}thead th.hg{background:var(--gr)}
+tbody tr:nth-child(even){background:#fafafa}
+tbody tr:hover{background:#fff8ec}
+tbody td{padding:6px 9px;border-bottom:1px solid #f2f2f2}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.pg{background:#e8f5e9;color:#1b5e20}.po{background:#fff3e0;color:#e65100}
+.pr{background:#fce4ec;color:#ad1457}.pd{background:var(--dk);color:var(--or)}
+.tr-tot td{border-top:2px solid var(--dk);background:#f4f4f4!important;font-weight:700}
+.tr-avg td{border-top:2px dashed var(--or);background:#fff8ec!important;font-weight:700}
+.tr-sub td{background:#fafafa!important;font-weight:600;border-top:1px dashed var(--bd)}
+.scr{overflow-x:auto;margin-bottom:14px}
+.ibox{border-radius:0 9px 9px 0;padding:11px 15px;margin-bottom:10px;border-left:3px solid var(--or);background:#fff8ec}
+.ibox.ibl{border-left-color:var(--bl);background:#e8f0fe}
+.ibox.iwarn{border-left-color:var(--rd);background:#fdf0f0}
+.ibox.igood{border-left-color:var(--gr);background:#f0fdf4}
+.ibox .it{font-weight:700;font-size:12px;margin-bottom:3px}
+.ibox p{font-size:12px;color:#555;line-height:1.55}
+.mbbar{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.mb{padding:5px 14px;border:1.5px solid var(--bd);border-radius:20px;font-size:12px;cursor:pointer;background:var(--wh);color:#555;font-weight:600;font-family:inherit}
+.mb.active{background:var(--dk);color:var(--or);border-color:var(--dk)}
+.ncb{background:#e3f2fd;border:1.5px solid var(--bl);border-radius:11px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:flex-start;gap:12px}
+.ncb .ico{font-size:26px;line-height:1}
+.ncb .txt{font-size:12px;color:var(--bl)}
+.ncb strong{font-size:17px;display:block;color:#0d47a1;margin-bottom:3px}
+.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:16px}
+.db{background:var(--wh);border:1.5px solid var(--bd);border-radius:10px;padding:12px 14px;cursor:pointer;text-align:center;font-family:inherit;font-size:12px;font-weight:600;color:var(--dk);transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px}
+.db:hover{border-color:var(--or);background:#fffdf5;transform:translateY(-1px)}
+.dbm{background:var(--or);color:var(--dk);border:none;padding:10px 22px;border-radius:24px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;margin-right:8px;margin-bottom:8px}
+.dbm:hover{background:#e08800}
+@media(max-width:680px){.r2{grid-template-columns:1fr}.ugrid{grid-template-columns:1fr}.page{padding:12px}}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="hdr">
   <div class="brand">raamdecoratie.com</div>
-  <div class="hdr-badges">
-    <div class="status-wrap">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusLabel">Geen data geladen</span>
-    </div>
-    <span class="bdg bdg-or" id="hdrPeriod" style="display:none"></span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <div class="sw"><div class="sd" id="sd"></div><span id="slbl">Geen data geladen</span></div>
+    <span class="bdg bdg-or" id="hdrP" style="display:none"></span>
   </div>
 </div>
 
-<!-- UPLOAD SCREEN -->
 <div id="upload-screen">
-  <div class="up-hero">
-    <h2>&#128202; Sales Dashboard</h2>
-    <p>Upload je bellijst en het provincie-bestand. Het dashboard verwerkt alles automatisch — inclusief nieuwe maanden zoals Mei, Juni etc.</p>
-  </div>
-
-  <div class="up-steps">
+  <div class="uh2">&#128202; Sales Dashboard</div>
+  <div class="up">Upload je bellijst en provincie-bestand. Nieuwe maanden (Mei, Juni etc.) worden automatisch verwerkt.</div>
+  <div class="steps">
     <h3>Hoe werkt het?</h3>
-    <div class="step"><div class="step-n">1</div><div>Upload je <strong>bellijst XLSX</strong> &mdash; &#233;&#233;n bestand met alle maanden als aparte tabbladen (Januari 2026, Februari 2026 etc.), of meerdere bestanden per maand</div></div>
-    <div class="step"><div class="step-n">2</div><div>Upload het <strong>provincie-bestand XLSX</strong> &mdash; kolom A = ordernummer, kolom B = provincie, per tabblad per maand (jan, feb, mrt, apr etc.)</div></div>
-    <div class="step"><div class="step-n">3</div><div>Klik <strong>Verwerk</strong> &mdash; het dashboard laadt automatisch met alle maanden, grafieken en inzichten</div></div>
-    <div class="step"><div class="step-n">4</div><div>Nieuwe maand erbij? Upload gewoon een bijgewerkt bestand &mdash; <strong>nieuwe maanden worden automatisch toegevoegd</strong></div></div>
-    <div class="step"><div class="step-n">5</div><div>Download de <strong>9 persoonlijke adviseurs-dashboards</strong> via de Downloads-tab na het verwerken</div></div>
+    <div class="step"><div class="stn">1</div><div>Upload je <strong>bellijst XLSX</strong> &mdash; &#233;&#233;n bestand met tabbladen per maand (Januari 2026, Februari 2026 etc.) of meerdere bestanden</div></div>
+    <div class="step"><div class="stn">2</div><div>Upload het <strong>provincie-bestand XLSX</strong> &mdash; kolom A = ordernummer, kolom B = provincie, per maand-tabblad (jan, feb, mrt, apr etc.)</div></div>
+    <div class="step"><div class="stn">3</div><div>Klik <strong>Verwerk</strong> &mdash; alle maanden, grafieken en tabellen worden automatisch geladen</div></div>
+    <div class="step"><div class="stn">4</div><div>Download de <strong>9 persoonlijke adviseurs-dashboards</strong> via de Downloads-tab</div></div>
   </div>
-
-  <div class="up-grid">
-    <div class="up-card" id="card-bell"
-         ondragover="event.preventDefault();this.classList.add('drag')"
-         ondragleave="this.classList.remove('drag')"
-         ondrop="dropF(event,'bell')">
-      <span class="uc-ico">&#128203;</span>
-      <div class="uc-title">Bellijst (XLSX)</div>
-      <div class="uc-sub">
-        &#233;&#233;n bestand met tabbladen per maand<br><em>of</em> meerdere bestanden per maand<br><br>
-        Kolommen: <strong>Adviseur &bull; Waarde &bull; Besteld<br>Datum bellen &bull; Bel of mail &bull; Reden</strong>
-      </div>
-      <div class="uc-ok" id="bell-ok">&#10003; <span id="bell-name"></span></div>
-      <input type="file" id="inp-bell" accept=".xlsx,.xls" multiple onchange="assignF(Array.from(this.files),'bell')">
+  <div class="ugrid">
+    <div class="uc" id="cb" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'bell')">
+      <span class="uco">&#128203;</span>
+      <div class="uct">Bellijst (XLSX)</div>
+      <div class="ucs">&#233;&#233;n bestand met tabbladen per maand<br><em>of</em> meerdere bestanden per maand<br><br>Kolommen: <strong>Adviseur &bull; Waarde &bull; Besteld<br>Datum bellen &bull; Bel of mail &bull; Reden</strong></div>
+      <div class="ucok" id="bok">&#10003; <span id="bn"></span></div>
+      <input type="file" accept=".xlsx,.xls" multiple onchange="assignF(Array.from(this.files),'bell')">
     </div>
-    <div class="up-card" id="card-prov"
-         ondragover="event.preventDefault();this.classList.add('drag')"
-         ondragleave="this.classList.remove('drag')"
-         ondrop="dropF(event,'prov')">
-      <span class="uc-ico">&#128506;</span>
-      <div class="uc-title">Provincie-bestand (XLSX) <em style="font-weight:400;color:#aaa">optioneel</em></div>
-      <div class="uc-sub">
-        Kolom A = ordernummer<br>Kolom B = provincie<br><br>
-        Tabbladen per maand:<br>
-        <strong>jan &bull; feb &bull; mrt &bull; apr &bull; mei</strong> etc.
-      </div>
-      <div class="uc-ok" id="prov-ok">&#10003; <span id="prov-name"></span></div>
-      <input type="file" id="inp-prov" accept=".xlsx,.xls" onchange="assignF(Array.from(this.files),'prov')">
+    <div class="uc" id="cp" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="dropF(event,'prov')">
+      <span class="uco">&#128506;</span>
+      <div class="uct">Provincie-bestand <em style="font-weight:400;color:#aaa">(optioneel)</em></div>
+      <div class="ucs">Kolom A = ordernummer<br>Kolom B = provincie<br><br>Tabbladen: <strong>jan &bull; feb &bull; mrt &bull; apr &bull; mei</strong> etc.</div>
+      <div class="ucok" id="pok">&#10003; <span id="pn"></span></div>
+      <input type="file" accept=".xlsx,.xls" onchange="assignF(Array.from(this.files),'prov')">
     </div>
   </div>
-
-  <div class="up-progress" id="upProg"><div class="up-fill" id="upFill"></div></div>
-  <div class="up-err" id="upErr"></div>
-  <button class="btn-go" id="btnGo" onclick="processUpload()" disabled>Verwerk bestanden &#8594;</button>
-  <div class="up-note">
-    Kevin wordt automatisch uitgefilterd &bull; Belgische provincies worden samengevoegd als &ldquo;Belgi&#235;&rdquo;<br>
-    Vorige data wordt bewaard voor detectie van nieuwe bestellingen
-  </div>
+  <div class="upbar" id="upbar"><div class="upfill" id="upfill"></div></div>
+  <div class="uperr" id="uperr"></div>
+  <button class="bgo" id="bgo" onclick="processUpload()" disabled>Verwerk bestanden &#8594;</button>
+  <div class="unote">Kevin wordt automatisch uitgefilterd &bull; Belgische provincies worden samengevoegd als &ldquo;Belgi&#235;&rdquo;</div>
 </div>
 
-<!-- DASHBOARD -->
 <div id="dashboard">
   <div class="tabs" id="tabBar"></div>
   <div id="pages"></div>
 </div>
 
 <script>
-'use strict';
+// ── globals ──────────────────────────────────────────────────────────────
+var O='#F59901',DK='#2D2D2D',L='#F9CD92',P='#ce93d8',GR='#27ae60',BL='#1565c0',RD='#e74c3c',PU='#9c27b0';
+var MORD=['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+var MALI={'januari 2026':'Januari','februari 2026':'Februari','maart 2026':'Maart','april 2026':'April','mei 2026':'Mei','juni 2026':'Juni','juli 2026':'Juli','augustus 2026':'Augustus','september 2026':'September','oktober 2026':'Oktober','november 2026':'November','december 2026':'December','januari':'Januari','februari':'Februari','maart':'Maart','april':'April','mei':'Mei','juni':'Juni','juli':'Juli','augustus':'Augustus','september':'September','oktober':'Oktober','november':'November','december':'December'};
+var PSHT={'jan':'Januari','feb':'Februari','mrt':'Maart','apr':'April','mei':'Mei','jun':'Juni','jul':'Juli','aug':'Augustus','sep':'September','okt':'Oktober','nov':'November','dec':'December'};
+var BELG=['vlaanderen','brussel','provincie antwerpen','prov. antwerpen','vlaams gewest','vlaams-brabant','west-vlaanderen','oost-vlaanderen'];
+var S={bellFiles:null,provFile:null,data:null,prevRows:null,charts:{}};
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CONSTANTS & STATE
-// ═══════════════════════════════════════════════════════════════════════════
-var O='#F59901',D='#2D2D2D',L='#F9CD92',P='#ce93d8',GR='#27ae60',BL='#1565c0',RD='#e74c3c',PU='#9c27b0';
-var MONTH_ORDER = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
-var MONTH_ALIASES = {
-  'januari 2026':'Januari','februari 2026':'Februari','maart 2026':'Maart',
-  'april 2026':'April','mei 2026':'Mei','juni 2026':'Juni','juli 2026':'Juli',
-  'augustus 2026':'Augustus','september 2026':'September','oktober 2026':'Oktober',
-  'november 2026':'November','december 2026':'December',
-  'januari 2025':'Januari','februari 2025':'Februari',
-  'januari':'Januari','februari':'Februari','maart':'Maart','april':'April',
-  'mei':'Mei','juni':'Juni','juli':'Juli','augustus':'Augustus',
-  'september':'September','oktober':'Oktober','november':'November','december':'December'
-};
-var PROV_SHEET = {'jan':'Januari','feb':'Februari','mrt':'Maart','apr':'April',
-  'mei':'Mei','jun':'Juni','jul':'Juli','aug':'Augustus','sep':'September',
-  'okt':'Oktober','nov':'November','dec':'December'};
-var BELGIE = ['vlaanderen','brussel','provincie antwerpen','prov. antwerpen','vlaams gewest',
-  'vlaams-brabant','west-vlaanderen','oost-vlaanderen','prov. oost-vlaanderen','prov. west-vlaanderen'];
-
-var S = { bellFiles:null, provFile:null, data:null, prevRows:null, charts:{} };
-
-// ═══════════════════════════════════════════════════════════════════════════
-// UPLOAD HANDLERS
-// ═══════════════════════════════════════════════════════════════════════════
-function dropF(e,type){ e.preventDefault(); var f=Array.from(e.dataTransfer.files).filter(function(f){return /\.xlsx?$/i.test(f.name);}); if(f.length) assignF(f,type); }
+// ── upload ───────────────────────────────────────────────────────────────
+function dropF(e,t){e.preventDefault();var f=Array.from(e.dataTransfer.files).filter(function(f){return /\.xlsx?$/i.test(f.name);});if(f.length)assignF(f,t);}
 function assignF(files,type){
-  if(type==='bell'){
-    S.bellFiles=files;
-    document.getElementById('bell-ok').style.display='block';
-    document.getElementById('bell-name').textContent=files.length===1?files[0].name:files.length+' bestanden';
-    document.getElementById('card-bell').classList.add('done');
-  } else {
-    S.provFile=files[0];
-    document.getElementById('prov-ok').style.display='block';
-    document.getElementById('prov-name').textContent=files[0].name;
-    document.getElementById('card-prov').classList.add('done');
-  }
-  document.getElementById('btnGo').disabled=!S.bellFiles;
+  if(type==='bell'){S.bellFiles=files;document.getElementById('bok').style.display='block';document.getElementById('bn').textContent=files.length===1?files[0].name:files.length+' bestanden';document.getElementById('cb').classList.add('done');}
+  else{S.provFile=files[0];document.getElementById('pok').style.display='block';document.getElementById('pn').textContent=files[0].name;document.getElementById('cp').classList.add('done');}
+  document.getElementById('bgo').disabled=!S.bellFiles;
 }
+function setProg(p){document.getElementById('upbar').style.display='block';document.getElementById('upfill').style.width=p+'%';}
+function showErr(m){var e=document.getElementById('uperr');e.textContent=m;e.style.display='block';}
 
-function setProgress(p){ document.getElementById('upProg').style.display='block'; document.getElementById('upFill').style.width=p+'%'; }
-function showErr(msg){ var el=document.getElementById('upErr'); el.textContent=msg; el.style.display='block'; }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PROCESS UPLOAD
-// ═══════════════════════════════════════════════════════════════════════════
 function processUpload(){
-  document.getElementById('btnGo').disabled=true;
-  document.getElementById('upErr').style.display='none';
-  setProgress(5);
-  S.prevRows = S.data ? S.data.rows.slice() : (function(){ try{ var s=localStorage.getItem('rd_rows'); return s?JSON.parse(s):null; }catch(e){ return null; } })();
-
+  document.getElementById('bgo').disabled=true;
+  document.getElementById('uperr').style.display='none';
+  setProg(5);
+  S.prevRows=S.data?S.data.rows.slice():(function(){try{var s=localStorage.getItem('rd_rows');return s?JSON.parse(s):null;}catch(e){return null;}})();
   Promise.all(S.bellFiles.map(readWB))
-    .then(function(wbs){ setProgress(35); return parseBell(wbs); })
+    .then(function(wbs){setProg(35);return parseBell(wbs);})
     .then(function(rows){
-      setProgress(55);
-      if(S.provFile) return readWB(S.provFile).then(function(wb){ attachProv(rows,wb); return rows; });
+      setProg(55);
+      if(S.provFile)return readWB(S.provFile).then(function(wb){attachProv(rows,wb);return rows;});
       return rows;
     })
     .then(function(rows){
-      setProgress(80);
-      try{ localStorage.setItem('rd_rows', JSON.stringify(rows.slice(0,2000))); }catch(e){}
-      S.data = buildDataset(rows, S.prevRows);
-      setProgress(100);
-      setTimeout(renderDashboard, 300);
+      setProg(80);
+      try{localStorage.setItem('rd_rows',JSON.stringify(rows.slice(0,3000)));}catch(e){}
+      S.data=buildDataset(rows,S.prevRows);
+      setProg(100);
+      setTimeout(renderDashboard,300);
     })
-    .catch(function(err){ showErr('Fout: '+err.message); document.getElementById('btnGo').disabled=false; });
+    .catch(function(err){showErr('Fout: '+err.message);document.getElementById('bgo').disabled=false;});
 }
 
 function readWB(file){
   return new Promise(function(res,rej){
     var r=new FileReader();
-    r.onload=function(e){ try{ res(XLSX.read(e.target.result,{type:'binary',cellDates:true})); }catch(err){ rej(err); } };
-    r.onerror=function(){ rej(new Error('Kan '+file.name+' niet lezen')); };
+    r.onload=function(e){try{res(XLSX.read(e.target.result,{type:'binary',cellDates:true}));}catch(err){rej(err);}};
+    r.onerror=function(){rej(new Error('Kan '+file.name+' niet lezen'));};
     r.readAsBinaryString(file);
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PARSE BELLIJST
-// ═══════════════════════════════════════════════════════════════════════════
+// ── parse ────────────────────────────────────────────────────────────────
 function parseBell(wbs){
   var rows=[];
   wbs.forEach(function(wb){
     wb.SheetNames.forEach(function(sn){
-      var maand=MONTH_ALIASES[sn.toLowerCase().trim()];
-      if(!maand) return;
+      var maand=MALI[sn.toLowerCase().trim()];
+      if(!maand)return;
       var data=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null,raw:false});
-      if(!data.length) return;
+      if(!data.length)return;
       var cm=detectCols(Object.keys(data[0]));
       data.forEach(function(r){
-        var adv=cStr(r[cm.adviseur]);
-        if(!adv) return;
+        var adv=cStr(r[cm.adv]);
+        if(!adv)return;
         adv=adv.charAt(0).toUpperCase()+adv.slice(1).toLowerCase();
-        if(adv.toLowerCase()==='kevin') return;
-        rows.push({
-          ordr: cStr(r[cm.ordernummer]),
-          klant: cStr(r[cm.klant]),
-          adv: adv,
-          waarde: cNum(r[cm.waarde]),
-          besteld: cStr(r[cm.besteld]),
-          dtMeting: cStr(r[cm.dt_meting]),
-          dtBellen: cStr(r[cm.dt_bellen]),
-          bom: cStr(r[cm.bom]),
-          reden: cStr(r[cm.reden]),
-          maand: maand,
-          prov: null,
-          isB: !!cStr(r[cm.besteld]),
-          hasContact: !!cStr(r[cm.dt_bellen])
-        });
+        if(adv.toLowerCase()==='kevin')return;
+        rows.push({ordr:cStr(r[cm.ordr]),klant:cStr(r[cm.klant]),adv:adv,waarde:cNum(r[cm.waarde]),besteld:cStr(r[cm.besteld]),dtM:cStr(r[cm.dtM]),dtB:cStr(r[cm.dtB]),bom:cStr(r[cm.bom]),reden:cStr(r[cm.reden]),maand:maand,prov:null,isB:!!cStr(r[cm.besteld]),hasC:!!cStr(r[cm.dtB])});
       });
     });
   });
-  if(!rows.length) throw new Error('Geen geldige rijen gevonden. Controleer de tabblad-namen (bijv. "Januari 2026")');
+  if(!rows.length)throw new Error('Geen rijen gevonden. Controleer tabblad-namen (bijv. "Januari 2026")');
   return rows;
 }
 
 function detectCols(keys){
   var m={};
-  var p={
-    ordernummer:/ordernummer|meetservice|order.?nr/i,
-    klant:/klant|naam|^name$/i,
-    adviseur:/adviseur/i,
-    waarde:/waarde|prijs|bedrag/i,
-    besteld:/besteld/i,
-    dt_meting:/datum.*met|meetdatum/i,
-    dt_bellen:/datum.*bell|bel.*datum/i,
-    bom:/bel.*mail|mail.*bel|contact.*type/i,
-    reden:/reden|oorzaak/i
-  };
-  keys.forEach(function(k){ Object.entries(p).forEach(function(e){ if(!m[e[0]]&&e[1].test(k)) m[e[0]]=k; }); });
-  // positional fallbacks
-  if(!m.ordernummer&&keys[2]) m.ordernummer=keys[2];
-  if(!m.adviseur&&keys[4])    m.adviseur=keys[4];
-  if(!m.waarde&&keys[5])      m.waarde=keys[5];
-  if(!m.besteld&&keys[6])     m.besteld=keys[6];
-  if(!m.dt_bellen&&keys[7])   m.dt_bellen=keys[7];
-  if(!m.bom&&keys[9])         m.bom=keys[9];
-  if(!m.reden&&keys[10])      m.reden=keys[10];
+  var p={ordr:/ordernummer|meetservice/i,klant:/klant|naam/i,adv:/adviseur/i,waarde:/waarde|prijs/i,besteld:/besteld/i,dtM:/datum.*met|meetdatum/i,dtB:/datum.*bell|bel.*datum/i,bom:/bel.*mail|mail.*bel/i,reden:/reden/i};
+  keys.forEach(function(k){Object.entries(p).forEach(function(e){if(!m[e[0]]&&e[1].test(k))m[e[0]]=k;});});
+  if(!m.ordr&&keys[2])m.ordr=keys[2];
+  if(!m.adv&&keys[4])m.adv=keys[4];
+  if(!m.waarde&&keys[5])m.waarde=keys[5];
+  if(!m.besteld&&keys[6])m.besteld=keys[6];
+  if(!m.dtB&&keys[7])m.dtB=keys[7];
+  if(!m.bom&&keys[9])m.bom=keys[9];
+  if(!m.reden&&keys[10])m.reden=keys[10];
   return m;
 }
 
-function cStr(v){ return(v===null||v===undefined||String(v).trim()==='')?null:String(v).trim(); }
-function cNum(v){ var n=parseFloat(String(v||0).replace(/[€,\s]/g,'')); return isNaN(n)?0:n; }
+function cStr(v){return(v===null||v===undefined||String(v).trim()==='')?null:String(v).trim();}
+function cNum(v){var n=parseFloat(String(v||0).replace(/[€,\s]/g,''));return isNaN(n)?0:n;}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PROVINCIE MAPPING
-// ═══════════════════════════════════════════════════════════════════════════
 function attachProv(rows,wb){
   var pm={};
   wb.SheetNames.forEach(function(sn){
-    var alias=PROV_SHEET[sn.toLowerCase().trim()]||MONTH_ALIASES[sn.toLowerCase().trim()]||null;
     var data=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:null,raw:false});
     data.forEach(function(r){
       var ordr=r[0]?String(r[0]).trim().split('.')[0]:null;
       var pv=r[1]?String(r[1]).trim():null;
-      if(!ordr||!pv) return;
-      if(!pm[ordr]) pm[ordr]=BELGIE.includes(pv.toLowerCase())?'België':pv;
+      if(!ordr||!pv)return;
+      if(!pm[ordr])pm[ordr]=BELG.includes(pv.toLowerCase())?'Belgi\u00eb':pv;
     });
   });
-  rows.forEach(function(r){ if(r.ordr&&pm[r.ordr]) r.prov=pm[r.ordr]; });
+  rows.forEach(function(r){if(r.ordr&&pm[r.ordr])r.prov=pm[r.ordr];});
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// BUILD DATASET
-// ═══════════════════════════════════════════════════════════════════════════
-function buildDataset(rows, prevRows){
-  var months=[...new Set(rows.map(function(r){return r.maand;}))].sort(function(a,b){return MONTH_ORDER.indexOf(a)-MONTH_ORDER.indexOf(b);});
+// ── dataset ──────────────────────────────────────────────────────────────
+function buildDataset(rows,prevRows){
+  var months=[...new Set(rows.map(function(r){return r.maand;}))].sort(function(a,b){return MORD.indexOf(a)-MORD.indexOf(b);});
   var adviseurs=[...new Set(rows.map(function(r){return r.adv;}))].filter(Boolean).sort();
 
   function stats(sub){
-    var n=sub.length, b=sub.filter(function(r){return r.isB;}).length;
+    var n=sub.length,b=sub.filter(function(r){return r.isB;}).length;
     var wi=sub.reduce(function(s,r){return s+r.waarde;},0);
-    var wb=sub.filter(function(r){return r.isB;}).reduce(function(s,r){return s+r.waarde;},0);
-    var nr=sub.filter(function(r){return r.hasContact;}).length;
-    var nb=sub.filter(function(r){return r.hasContact&&r.isB;}).length;
+    var wb2=sub.filter(function(r){return r.isB;}).reduce(function(s,r){return s+r.waarde;},0);
+    var nr=sub.filter(function(r){return r.hasC;}).length;
+    var nb=sub.filter(function(r){return r.hasC&&r.isB;}).length;
     var red={},bom={};
     sub.filter(function(r){return !r.isB&&r.reden;}).forEach(function(r){red[r.reden]=(red[r.reden]||0)+1;});
     sub.filter(function(r){return r.bom;}).forEach(function(r){bom[r.bom]=(bom[r.bom]||0)+1;});
-    var openK=sub.filter(function(r){return !r.hasContact&&!r.isB;});
-    // speed
-    var days=sub.filter(function(r){return r.hasContact&&r.dtMeting&&r.dtBellen;}).map(function(r){
-      var d=Math.round((new Date(r.dtBellen)-new Date(r.dtMeting))/(86400000)); return d>=0&&d<365?d:null;
-    }).filter(function(d){return d!==null;});
+    var openK=sub.filter(function(r){return !r.hasC&&!r.isB;});
+    var days=sub.filter(function(r){return r.hasC&&r.dtM&&r.dtB;}).map(function(r){var d=Math.round((new Date(r.dtB)-new Date(r.dtM))/86400000);return d>=0&&d<365?d:null;}).filter(function(d){return d!==null;});
     var gemD=days.length?Math.round(days.reduce(function(a,b){return a+b;},0)/days.length*10)/10:0;
-    var snel=sub.filter(function(r){return r.hasContact&&r.dtMeting&&r.dtBellen&&Math.round((new Date(r.dtBellen)-new Date(r.dtMeting))/86400000)<=14;});
-    var laat=sub.filter(function(r){return r.hasContact&&r.dtMeting&&r.dtBellen&&Math.round((new Date(r.dtBellen)-new Date(r.dtMeting))/86400000)>14;});
-    return{
-      n:n,b:b,niet:n-b,conv:n>0?Math.round(b/n*1000)/10:0,
-      wi:Math.round(wi),wb:Math.round(wb),cwi:wi>0?Math.round(wb/wi*1000)/10:0,
-      nr:nr,nb:nb,nc:nr>0?Math.round(nb/nr*1000)/10:0,
-      red:red,bom:bom,gemD:gemD,
-      snelConv:snel.length?Math.round(snel.filter(function(r){return r.isB;}).length/snel.length*1000)/10:0,
-      laatConv:laat.length?Math.round(laat.filter(function(r){return r.isB;}).length/laat.length*1000)/10:0,
-      openK:openK.length, openW:Math.round(openK.reduce(function(s,r){return s+r.waarde;},0))
-    };
+    var snel=sub.filter(function(r){return r.hasC&&r.dtM&&r.dtB&&Math.round((new Date(r.dtB)-new Date(r.dtM))/86400000)<=14;});
+    var laat=sub.filter(function(r){return r.hasC&&r.dtM&&r.dtB&&Math.round((new Date(r.dtB)-new Date(r.dtM))/86400000)>14;});
+    return{n:n,b:b,niet:n-b,conv:n>0?r1(b/n*100):0,wi:Math.round(wi),wb:Math.round(wb2),cwi:wi>0?r1(wb2/wi*100):0,nr:nr,nb:nb,nc:nr>0?r1(nb/nr*100):0,red:red,bom:bom,gemD:gemD,snelConv:snel.length?r1(snel.filter(function(r){return r.isB;}).length/snel.length*100):0,laatConv:laat.length?r1(laat.filter(function(r){return r.isB;}).length/laat.length*100):0,openK:openK.length,openW:Math.round(openK.reduce(function(s,r){return s+r.waarde;},0))};
   }
 
-  // MD
   var MD={};
-  months.forEach(function(m){ MD[m]=stats(rows.filter(function(r){return r.maand===m;})); });
+  months.forEach(function(m){MD[m]=stats(rows.filter(function(r){return r.maand===m;}));});
 
-  // AD
   var AD={};
   adviseurs.forEach(function(a){
     AD[a]={};
     months.forEach(function(m){
       var sub=rows.filter(function(r){return r.adv===a&&r.maand===m;});
-      if(!sub.length) return;
+      if(!sub.length)return;
       var s=stats(sub);
       var pv={};
-      sub.filter(function(r){return r.prov;}).forEach(function(r){
-        if(!pv[r.prov]) pv[r.prov]={n:0,b:0};
-        pv[r.prov].n++; if(r.isB) pv[r.prov].b++;
-      });
-      Object.keys(pv).forEach(function(p){var v=pv[p];v.c=v.n>0?Math.round(v.b/v.n*1000)/10:0;});
+      sub.filter(function(r){return r.prov;}).forEach(function(r){if(!pv[r.prov])pv[r.prov]={n:0,b:0};pv[r.prov].n++;if(r.isB)pv[r.prov].b++;});
+      Object.keys(pv).forEach(function(p){var v=pv[p];v.c=v.n>0?r1(v.b/v.n*100):0;});
       var mail=sub.filter(function(r){return r.bom==='Mail';});
       var bel=sub.filter(function(r){return r.bom==='Bellen';});
-      s.prov=pv; s.mail=mail.length; s.bellen=bel.length;
-      s.mailConv=mail.length?Math.round(mail.filter(function(r){return r.isB;}).length/mail.length*1000)/10:0;
-      s.belConv=bel.length?Math.round(bel.filter(function(r){return r.isB;}).length/bel.length*1000)/10:0;
-      s.convNa=sub.filter(function(r){return r.hasContact&&r.isB;}).length;
+      s.prov=pv;s.mail=mail.length;s.bellen=bel.length;
+      s.mailConv=mail.length?r1(mail.filter(function(r){return r.isB;}).length/mail.length*100):0;
+      s.belConv=bel.length?r1(bel.filter(function(r){return r.isB;}).length/bel.length*100):0;
+      s.convNa=sub.filter(function(r){return r.hasC&&r.isB;}).length;
       AD[a][m]=s;
     });
   });
 
-  // PV
   var PV={};
   months.forEach(function(m){
     PV[m]={};
-    rows.filter(function(r){return r.maand===m&&r.prov;}).forEach(function(r){
-      if(!PV[m][r.prov]) PV[m][r.prov]={n:0,b:0};
-      PV[m][r.prov].n++; if(r.isB) PV[m][r.prov].b++;
-    });
-    Object.keys(PV[m]).forEach(function(p){var v=PV[m][p];v.c=v.n>0?Math.round(v.b/v.n*1000)/10:0;});
+    rows.filter(function(r){return r.maand===m&&r.prov;}).forEach(function(r){if(!PV[m][r.prov])PV[m][r.prov]={n:0,b:0};PV[m][r.prov].n++;if(r.isB)PV[m][r.prov].b++;});
+    Object.keys(PV[m]).forEach(function(p){var v=PV[m][p];v.c=v.n>0?r1(v.b/v.n*100):0;});
   });
   var pvTot={};
   months.forEach(function(m){Object.entries(PV[m]).forEach(function(e){var p=e[0],v=e[1];if(!pvTot[p])pvTot[p]={n:0,b:0};pvTot[p].n+=v.n;pvTot[p].b+=v.b;});});
-  Object.keys(pvTot).forEach(function(p){var v=pvTot[p];v.c=v.n>0?Math.round(v.b/v.n*1000)/10:0;});
+  Object.keys(pvTot).forEach(function(p){var v=pvTot[p];v.c=v.n>0?r1(v.b/v.n*100):0;});
   PV.Totaal=pvTot;
 
-  // New conversions
   var NC=[];
   if(prevRows){
-    var prevB={};
-    prevRows.filter(function(r){return r.isB;}).forEach(function(r){prevB[r.ordr+'_'+r.maand]=true;});
-    rows.filter(function(r){return r.isB;}).forEach(function(r){
-      if(!prevB[r.ordr+'_'+r.maand]) NC.push({naam:r.klant||'—',maand:r.maand,adv:r.adv,waarde:r.waarde,contact:r.bom||'',reden:r.reden||''});
-    });
+    var pb={};
+    prevRows.filter(function(r){return r.isB;}).forEach(function(r){pb[r.ordr+'_'+r.maand]=true;});
+    rows.filter(function(r){return r.isB;}).forEach(function(r){if(!pb[r.ordr+'_'+r.maand])NC.push({naam:r.klant||'\u2014',maand:r.maand,adv:r.adv,waarde:r.waarde,contact:r.bom||'',reden:r.reden||''});});
   }
 
   return{rows:rows,months:months,adviseurs:adviseurs,MD:MD,AD:AD,PV:PV,NC:NC};
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// RENDER DASHBOARD
-// ═══════════════════════════════════════════════════════════════════════════
+function r1(v){return Math.round(v*10)/10;}
+
+// ── render ────────────────────────────────────────────────────────────────
 function renderDashboard(){
   var D=S.data;
   document.getElementById('upload-screen').style.display='none';
   document.getElementById('dashboard').style.display='block';
-  document.getElementById('statusDot').classList.add('on');
-  document.getElementById('statusLabel').textContent=D.months.join(' + ')+' geladen';
-  var hdrP=document.getElementById('hdrPeriod');
-  hdrP.style.display=''; hdrP.textContent=D.months[0]+' – '+D.months[D.months.length-1]+' 2026';
-
-  // destroy old charts
+  document.getElementById('sd').classList.add('on');
+  document.getElementById('slbl').textContent=D.months.join(' + ')+' geladen';
+  var hp=document.getElementById('hdrP');hp.style.display='';hp.textContent=D.months[0]+' \u2013 '+D.months[D.months.length-1]+' 2026';
   Object.values(S.charts).forEach(function(c){try{c.destroy();}catch(e){}});
   S.charts={};
-
   buildTabs(D);
-  buildPages(D);
-  initCharts(D);
+  buildAllPages(D);
+  // init always-visible charts after a small delay
+  setTimeout(function(){initMainCharts(D);},100);
 }
 
-// ── tabs ────────────────────────────────────────────────────────────────────
+// ── tabs ──────────────────────────────────────────────────────────────────
 function buildTabs(D){
   var bar=document.getElementById('tabBar');
-  var tabs=[
-    {id:'ov',   lbl:'📊 Overzicht',      cls:''},
-    {id:'adv',  lbl:'👤 Adviseurs',       cls:''},
-    {id:'prov', lbl:'🗺️ Provincie',       cls:''},
-    {id:'regio',lbl:'📍 Adv. per regio',  cls:''},
-    {id:'nab',  lbl:'📞 Nabellen',        cls:''},
-    {id:'nab2', lbl:'🎯 Nabellen detail', cls:'tg'},
+  var defs=[
+    {id:'ov',lbl:'&#128202; Overzicht',cls:''},
+    {id:'adv',lbl:'&#128100; Adviseurs',cls:''},
+    {id:'prov',lbl:'&#128506;&#65039; Provincie',cls:''},
+    {id:'regio',lbl:'&#128205; Adv. per regio',cls:''},
+    {id:'nab',lbl:'&#128222; Nabellen',cls:''},
+    {id:'nab2',lbl:'&#127919; Nabellen detail',cls:'tg'}
   ];
-  D.months.forEach(function(m){ tabs.push({id:'m-'+m,lbl:'🟣 '+m,cls:''}); });
-  if(D.NC.length) tabs.push({id:'nc',lbl:'🆕 Nieuwe best.',cls:'tb'});
-  tabs.push({id:'dl',lbl:'⬇️ Downloads',cls:''});
-  tabs.push({id:'upload',lbl:'⬆ Nieuw bestand',cls:'tu'});
-
+  D.months.forEach(function(m){defs.push({id:'m_'+m,lbl:'&#128995; '+m,cls:''}); });
+  if(D.NC.length)defs.push({id:'nc',lbl:'&#128338; Nieuwe best.',cls:'tb'});
+  defs.push({id:'dl',lbl:'&#8659;&#65039; Downloads',cls:''});
+  defs.push({id:'up',lbl:'&#8679; Nieuw bestand',cls:'tu'});
   bar.innerHTML='';
-  tabs.forEach(function(t,i){
+  defs.forEach(function(t,i){
     var btn=document.createElement('button');
     btn.className='tab '+(t.cls)+(i===0?' active':'');
-    btn.textContent=t.lbl;
-    btn.onclick=function(){ showPage(t.id,btn); };
+    btn.innerHTML=t.lbl;
+    btn.setAttribute('data-id',t.id);
+    btn.onclick=function(){switchPage(t.id,btn);};
     bar.appendChild(btn);
   });
 }
 
-function showPage(id,el){
-  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
-  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
-  var pg=document.getElementById('page-'+id);
-  if(pg) pg.classList.add('active');
-  if(el) el.classList.add('active');
-  // lazy charts
-  if(id==='nab2'&&!window._n2done){window._n2done=true;initNab2Charts();}
-  if(id==='nc'&&!window._ncdone){window._ncdone=true;initNcCharts();}
-  S.data.months.forEach(function(m){
-    if(id==='m-'+m&&!window['_m'+m]){window['_m'+m]=true;initMonthCharts(m);}
-  });
-  if(id==='upload'){
+function switchPage(id,el){
+  if(id==='up'){
     document.getElementById('upload-screen').style.display='flex';
     document.getElementById('dashboard').style.display='none';
+    return;
   }
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  var pg=document.getElementById('pg_'+id);
+  if(pg){pg.classList.add('active');}
+  if(el){el.classList.add('active');}
+  // init charts for this page after DOM is visible
+  setTimeout(function(){
+    if(!S.data)return;
+    var D=S.data;
+    if(id==='nab2'){initNab2Charts(D);return;}
+    if(id==='nc'){initNcCharts(D);return;}
+    // month page
+    D.months.forEach(function(m){
+      if(id==='m_'+m){initMonthCharts(D,m);}
+    });
+  },80);
 }
 
-// ── helpers ─────────────────────────────────────────────────────────────────
-function ef(n){ return '€'+Number(Math.round(n)).toLocaleString('nl-NL'); }
-function fN(n){ return Number(n).toLocaleString('nl-NL'); }
-function pill(c,t){
-  var cls; if(t!==undefined) cls=c>=t?'pg':(c>=65?'po':'pr'); else cls=c>=75?'pg':(c>=65?'po':'pr');
-  return '<span class="pill '+cls+'">'+c+'%</span>';
+// ── page builder ──────────────────────────────────────────────────────────
+function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html)e.innerHTML=html;return e;}
+function addPage(id,content){
+  var d=document.createElement('div');
+  d.className='page';d.id='pg_'+id;
+  d.innerHTML=content;
+  document.getElementById('pages').appendChild(d);
+  if(id==='ov')d.classList.add('active');
 }
-function dh(v,g){ var d=Math.round((v-g)*10)/10,col=d>=0?GR:RD,s=d>=0?'+':''; return '<span style="color:'+col+';font-size:11px;font-weight:700">'+s+d+'%</span>'; }
-function gc(c){ return c>=85?GR:c>=75?O:c>=65?'#f39c12':'#ef5350'; }
-function mkChart(id,cfg){ if(S.charts[id]){try{S.charts[id].destroy();}catch(e){}} var el=document.getElementById(id); if(!el) return; S.charts[id]=new Chart(el,cfg); }
-function addPage(id,html){ var d=document.createElement('div'); d.className='page'; d.id='page-'+id; d.innerHTML=html; document.getElementById('pages').appendChild(d); if(id==='ov') d.classList.add('active'); }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// BUILD PAGES
-// ═══════════════════════════════════════════════════════════════════════════
-function buildPages(D){
+function h(t,c){return '<span class="pill '+c+'">'+t+'%</span>';}
+function pc(c,t){var cls=t!==undefined?(c>=t?'pg':c>=65?'po':'pr'):(c>=75?'pg':c>=65?'po':'pr');return h(c,cls);}
+function dh(v,g){var d=r1(v-g),col=d>=0?GR:RD,s=d>=0?'+':'';return '<span style="color:'+col+';font-size:11px;font-weight:700">'+s+d+'%</span>';}
+function ef(n){return '\u20ac'+Number(Math.round(n)).toLocaleString('nl-NL');}
+function fN(n){return Number(n).toLocaleString('nl-NL');}
+function gc(c){return c>=85?GR:c>=75?O:c>=65?'#f39c12':'#ef5350';}
+
+function buildAllPages(D){
   document.getElementById('pages').innerHTML='';
-  window._n2done=false; window._ncdone=false;
-  D.months.forEach(function(m){window['_m'+m]=false;});
+  var M=D.months,AN=D.adviseurs,MD=D.MD,AD=D.AD,PV=D.PV,NC=D.NC;
+  var MCOLS=[O,DK,L,P,GR,BL,PU,'#ff9800','#009688','#795548','#607d8b','#e91e63'];
 
-  var M=D.months, AN=D.adviseurs, MD=D.MD, AD=D.AD, PV=D.PV, NC=D.NC;
   var tN=M.reduce(function(s,m){return s+MD[m].n;},0);
   var tB=M.reduce(function(s,m){return s+MD[m].b;},0);
   var tWi=M.reduce(function(s,m){return s+MD[m].wi;},0);
   var tWb=M.reduce(function(s,m){return s+MD[m].wb;},0);
-  var tC=tN>0?Math.round(tB/tN*1000)/10:0;
-  var tCw=tWi>0?Math.round(tWb/tWi*1000)/10:0;
+  var tC=tN>0?r1(tB/tN*100):0;
+  var tCw=tWi>0?r1(tWb/tWi*100):0;
   var q1M=M.slice(0,Math.min(3,M.length));
   var q1n=q1M.reduce(function(s,m){return s+MD[m].n;},0);
   var q1b=q1M.reduce(function(s,m){return s+MD[m].b;},0);
-  var q1c=q1n>0?Math.round(q1b/q1n*1000)/10:0;
-  var q1gem=q1M.length?Math.round(q1M.reduce(function(s,m){return s+MD[m].conv;},0)/q1M.length*10)/10:0;
-  var lastM=M[M.length-1], lastD=MD[lastM];
+  var q1c=q1n>0?r1(q1b/q1n*100):0;
+  var q1gem=q1M.length?r1(q1M.reduce(function(s,m){return s+MD[m].conv;},0)/q1M.length):0;
+  var lastM=M[M.length-1],lastD=MD[lastM];
 
-  // ── OVERZICHT ─────────────────────────────────────────────────────────────
-  var sumRows=M.map(function(m){
-    var d=MD[m]; var cls=d.conv>=75?'pg':d.conv>=65?'po':'pr';
-    return '<tr><td>'+m+'</td><td>'+d.n+'</td><td>'+d.b+'</td><td>'+d.niet+'</td><td>'+pill(d.conv)+'</td><td>'+ef(d.wi)+'</td><td>'+ef(d.wb)+'</td><td>'+d.cwi+'%</td></tr>';
-  }).join('');
-
+  // ── OVERZICHT ──────────────────────────────────────────────────────────
+  var sumR=M.map(function(m){var d=MD[m];return '<tr><td>'+m+'</td><td>'+d.n+'</td><td>'+d.b+'</td><td>'+d.niet+'</td><td>'+pc(d.conv)+'</td><td>'+ef(d.wi)+'</td><td>'+ef(d.wb)+'</td><td>'+d.cwi+'%</td></tr>';}).join('');
   addPage('ov',
     '<div class="sec">Totaal '+M[0]+' t/m '+lastM+'</div>'+
     '<div class="kg">'+
-    '<div class="kpi ka"><div class="klbl">Totaal ingemeten</div><div class="kval">'+fN(tN)+'</div><div class="ksub">'+M.join(' + ')+'</div></div>'+
-    '<div class="kpi ka"><div class="klbl">Totaal besteld</div><div class="kval">'+fN(tB)+'</div><div class="ksub">van '+fN(tN)+' metingen</div></div>'+
-    '<div class="kpi kg2"><div class="klbl">Conversie totaal</div><div class="kval">'+tC+'%</div><div class="ksub">alle maanden</div></div>'+
-    '<div class="kpi"><div class="klbl">Waarde ingemeten</div><div class="kval" style="font-size:19px">'+ef(tWi)+'</div></div>'+
-    '<div class="kpi"><div class="klbl">Waarde besteld</div><div class="kval" style="font-size:19px">'+ef(tWb)+'</div></div>'+
-    '<div class="kpi '+(lastD.conv<q1gem?'kr':'kg2')+'"><div class="klbl">'+lastM+' conversie</div><div class="kval" style="color:'+(lastD.conv<q1gem?RD:GR)+'">'+lastD.conv+'%</div><div class="ksub">'+dh(lastD.conv,q1gem)+' vs Q1 gem</div></div>'+
+    kpi('ka',fN(tN),'Totaal ingemeten',M.join(' + '))+
+    kpi('ka',fN(tB),'Totaal besteld','van '+fN(tN)+' metingen')+
+    kpi('kg2',tC+'%','Conversie totaal','alle maanden')+
+    kpi('',ef(tWi),'Waarde ingemeten','','font-size:18px')+
+    kpi('',ef(tWb),'Waarde besteld','','font-size:18px')+
+    kpi(lastD.conv<q1gem?'kr':'kg2','<span style="color:'+(lastD.conv<q1gem?RD:GR)+'">'+lastD.conv+'%</span>',lastM+' conversie',dh(lastD.conv,q1gem)+' vs Q1 gem')+
     '</div>'+
-    (lastD.conv<q1gem?'<div class="ibox iwarn"><div class="it">⚠️ '+lastM+' conversie '+lastD.conv+'% — '+Math.round((q1gem-lastD.conv)*10)/10+' ppt onder Q1 gemiddelde ('+q1gem+'%)</div><p>Gerichte nabellen-opvolging is gewenst voor de niet-bestelde metingen.</p></div>':'')+
-    '<div class="row2">'+
-    '<div class="card"><div class="ctitle">Conversie% per maand</div><div style="position:relative;height:230px"><canvas id="cConvBar"></canvas></div></div>'+
-    '<div class="card"><div class="ctitle">Waarde ingemeten vs besteld (€)</div><div class="leg"><span><span class="dot" style="background:#F9CD92"></span>Ingemeten</span><span><span class="dot" style="background:#F59901"></span>Besteld</span></div><div style="position:relative;height:230px"><canvas id="cWaarde"></canvas></div></div>'+
+    (lastD.conv<q1gem?'<div class="ibox iwarn"><div class="it">&#9888;&#65039; '+lastM+' conversie '+lastD.conv+'% &mdash; '+r1(q1gem-lastD.conv)+' ppt onder Q1 gemiddelde ('+q1gem+'%)</div><p>Gerichte nabellen-opvolging gewenst.</p></div>':'')+
+    '<div class="r2">'+
+    '<div class="cc"><div class="cct">Conversie% per maand</div><div style="height:230px"><canvas id="cConvBar"></canvas></div></div>'+
+    '<div class="cc"><div class="cct">Waarde ingemeten vs besteld (&#8364;)</div><div class="leg"><span><span class="dot" style="background:#F9CD92"></span>Ingemeten</span><span><span class="dot" style="background:#F59901"></span>Besteld</span></div><div style="height:230px"><canvas id="cWaarde"></canvas></div></div>'+
     '</div>'+
     '<div class="sec">Maandoverzicht</div>'+
-    '<div class="scr"><table><thead><tr><th>Maand</th><th>Ingemeten</th><th>Besteld</th><th>Niet best.</th><th>Conv%</th><th>Waarde ing.</th><th>Waarde best.</th><th>Conv%€</th></tr></thead><tbody>'+
-    sumRows+
-    '<tr class="tr-sub"><td>Q1 subtotaal</td><td>'+q1n+'</td><td>'+q1b+'</td><td>'+(q1n-q1b)+'</td><td>'+pill(q1c)+'</td><td>'+ef(q1M.reduce(function(s,m){return s+MD[m].wi;},0))+'</td><td>'+ef(q1M.reduce(function(s,m){return s+MD[m].wb;},0))+'</td><td>'+Math.round(q1M.reduce(function(s,m){return s+MD[m].wb;},0)/q1M.reduce(function(s,m){return s+MD[m].wi;},0)*1000)/10+'%</td></tr>'+
-    '<tr class="tr-tot"><td>Totaal</td><td>'+tN+'</td><td>'+tB+'</td><td>'+(tN-tB)+'</td><td>'+pill(tC)+'</td><td>'+ef(tWi)+'</td><td>'+ef(tWb)+'</td><td>'+tCw+'%</td></tr>'+
+    '<div class="scr"><table><thead><tr><th>Maand</th><th>Ingemeten</th><th>Besteld</th><th>Niet</th><th>Conv%</th><th>Waarde ing.</th><th>Waarde best.</th><th>Conv%&#8364;</th></tr></thead><tbody>'+sumR+
+    '<tr class="tr-sub"><td>Q1</td><td>'+q1n+'</td><td>'+q1b+'</td><td>'+(q1n-q1b)+'</td><td>'+pc(q1c)+'</td><td>'+ef(q1M.reduce(function(s,m){return s+MD[m].wi;},0))+'</td><td>'+ef(q1M.reduce(function(s,m){return s+MD[m].wb;},0))+'</td><td></td></tr>'+
+    '<tr class="tr-tot"><td>Totaal</td><td>'+tN+'</td><td>'+tB+'</td><td>'+(tN-tB)+'</td><td>'+pc(tC)+'</td><td>'+ef(tWi)+'</td><td>'+ef(tWb)+'</td><td>'+tCw+'%</td></tr>'+
     '</tbody></table></div>'
   );
 
-  // ── ADVISEURS ─────────────────────────────────────────────────────────────
+  // ── ADVISEURS ──────────────────────────────────────────────────────────
   var advHdr=M.map(function(m){var s=m.slice(0,3);return '<th>'+s+' ing.</th><th>'+s+' b.</th><th>'+s+'%</th>';}).join('');
-  var advRows=AN.map(function(a){
-    var cells=M.map(function(m){
-      var d=AD[a][m]; if(!d) return '<td>—</td><td>—</td><td style="color:#ccc">—</td>';
-      var cls=d.conv>=MD[m].conv?'pg':d.conv>=65?'po':'pr';
-      return '<td>'+d.n+'</td><td>'+d.b+'</td><td><span class="pill '+cls+'">'+d.conv+'%</span></td>';
-    }).join('');
+  var advR=AN.map(function(a){
+    var cells=M.map(function(m){var d=AD[a][m];if(!d)return '<td>\u2014</td><td>\u2014</td><td style="color:#ccc">\u2014</td>';var cls=d.conv>=MD[m].conv?'pg':d.conv>=65?'po':'pr';return '<td>'+d.n+'</td><td>'+d.b+'</td><td><span class="pill '+cls+'">'+d.conv+'%</span></td>';}).join('');
     var ti=M.reduce(function(s,m){return s+(AD[a][m]?AD[a][m].n:0);},0);
     var tb=M.reduce(function(s,m){return s+(AD[a][m]?AD[a][m].b:0);},0);
-    var tc=ti>0?Math.round(tb/ti*1000)/10:0;
-    return '<tr><td><strong>'+a+'</strong></td>'+cells+'<td>'+tb+'/'+ti+'</td><td><span class="pill pd">'+tc+'%</span></td></tr>';
+    var tc=ti>0?r1(tb/ti*100):0;
+    return '<tr><td><strong>'+a+'</strong></td>'+cells+'<td>'+tb+'/'+ti+'</td><td>'+pc(tc)+'</td></tr>';
   }).join('');
-  var avgCells=M.map(function(m){return '<td>'+MD[m].n+'</td><td>'+MD[m].b+'</td><td><span class="pill pd">'+MD[m].conv+'%</span></td>';}).join('');
-  advRows+='<tr class="tr-avg"><td><strong>Team gem.</strong></td>'+avgCells+'<td>'+tB+'/'+tN+'</td><td><span class="pill pd">'+tC+'%</span></td></tr>';
-
-  var gemRows=M.map(function(m){
-    var sc=AN.map(function(a){return [a,AD[a][m]?AD[a][m].conv:0];}).filter(function(x){return AD[x[0]][m];});
-    if(!sc.length) return '';
+  var avgC=M.map(function(m){return '<td>'+MD[m].n+'</td><td>'+MD[m].b+'</td><td><span class="pill pd">'+MD[m].conv+'%</span></td>';}).join('');
+  advR+='<tr class="tr-avg"><td><strong>Team gem.</strong></td>'+avgC+'<td>'+tB+'/'+tN+'</td><td><span class="pill pd">'+tC+'%</span></td></tr>';
+  var gemR=M.map(function(m){
+    var sc=AN.map(function(a){return[a,AD[a][m]?AD[a][m].conv:0];}).filter(function(x){return AD[x[0]][m];});
+    if(!sc.length)return'';
     var best=sc.reduce(function(a,b){return a[1]>b[1]?a:b;});
     var worst=sc.reduce(function(a,b){return a[1]<b[1]?a:b;});
-    var cls=MD[m].conv>=75?'pg':MD[m].conv>=65?'po':'pr';
-    return '<tr><td>'+m+'</td><td><span class="pill '+cls+'">'+MD[m].conv+'%</span></td><td>'+best[0]+' '+best[1]+'%</td><td>'+worst[0]+' '+worst[1]+'%</td><td>'+Math.round((best[1]-worst[1])*10)/10+' ppt</td></tr>';
+    return '<tr><td>'+m+'</td><td>'+pc(MD[m].conv)+'</td><td>'+best[0]+' '+best[1]+'%</td><td>'+worst[0]+' '+worst[1]+'%</td><td>'+r1(best[1]-worst[1])+' ppt</td></tr>';
   }).join('');
-
   addPage('adv',
-    '<div class="sec">Conversie per adviseur — alle maanden</div>'+
-    '<div class="row2"><div class="card full"><div class="ctitle">Conversie% per adviseur per maand</div><div style="position:relative;height:350px"><canvas id="cAdvConv"></canvas></div></div></div>'+
+    '<div class="sec">Conversie per adviseur</div>'+
+    '<div class="r2"><div class="cc full"><div class="cct">Conversie% per adviseur per maand</div><div style="height:350px"><canvas id="cAdvConv"></canvas></div></div></div>'+
     '<div class="sec">Detailtabel</div>'+
-    '<div class="scr"><table><thead><tr><th>Adviseur</th>'+advHdr+'<th class="hb">Totaal</th><th class="hb">%</th></tr></thead><tbody>'+advRows+'</tbody></table></div>'+
+    '<div class="scr"><table><thead><tr><th>Adviseur</th>'+advHdr+'<th class="hb">Totaal</th><th class="hb">%</th></tr></thead><tbody>'+advR+'</tbody></table></div>'+
     '<div class="sec">Gemiddelden per maand</div>'+
-    '<div class="scr"><table><thead><tr><th>Maand</th><th>Team gem.</th><th>Hoogst</th><th>Laagst</th><th>Spreiding</th></tr></thead><tbody>'+gemRows+'</tbody></table></div>'+
-    '<div class="sec" style="margin-top:16px">Inmeet waarde per adviseur (€)</div>'+
-    '<div class="row2"><div class="card full"><div class="ctitle">Ingemeten waarde per adviseur per maand</div><div style="position:relative;height:310px"><canvas id="cAdvWaarde"></canvas></div></div></div>'
+    '<div class="scr"><table><thead><tr><th>Maand</th><th>Team gem.</th><th>Hoogst</th><th>Laagst</th><th>Spreiding</th></tr></thead><tbody>'+gemR+'</tbody></table></div>'+
+    '<div class="sec" style="margin-top:16px">Inmeet waarde per adviseur (&#8364;)</div>'+
+    '<div class="r2"><div class="cc full"><div class="cct">Ingemeten waarde per adviseur per maand</div><div style="height:300px"><canvas id="cAdvWaarde"></canvas></div></div></div>'
   );
 
-  // ── PROVINCIE ─────────────────────────────────────────────────────────────
+  // ── PROVINCIE ──────────────────────────────────────────────────────────
   var mbbtns=M.map(function(m){return '<button class="mb" onclick="selProv(\''+m+'\',this)">'+m+'</button>';}).join('')+'<button class="mb active" onclick="selProv(\'Totaal\',this)">Totaal</button>';
   addPage('prov',
-    '<div class="sec">Provincie — selecteer periode</div>'+
+    '<div class="sec">Provincie &mdash; selecteer periode</div>'+
     '<div class="mbbar">'+mbbtns+'</div>'+
-    '<div class="row2"><div class="card full"><div class="ctitle" id="ptitle">Conversie % — Totaal</div><div style="position:relative;" id="pwrap"><canvas id="cProv"></canvas></div></div></div>'+
-    '<div class="row2"><div class="card full"><div class="ctitle" id="pvtitle">Volume — Totaal</div><div class="leg"><span><span class="dot" style="background:#F9CD92"></span>Ingemeten</span><span><span class="dot" style="background:#F59901"></span>Besteld</span></div><div style="position:relative;height:380px"><canvas id="cProvVol"></canvas></div></div></div>'+
+    '<div class="r2"><div class="cc full"><div class="cct" id="ptitle">Conversie % &mdash; Totaal</div><div id="pwrap" style="position:relative"><canvas id="cProv"></canvas></div></div></div>'+
+    '<div class="r2"><div class="cc full"><div class="cct" id="pvtitle">Volume &mdash; Totaal</div><div class="leg"><span><span class="dot" style="background:#F9CD92"></span>Ingemeten</span><span><span class="dot" style="background:#F59901"></span>Besteld</span></div><div style="height:380px"><canvas id="cProvVol"></canvas></div></div></div>'+
     '<div class="scr"><table><thead><tr><th>Provincie</th><th>Ingemeten</th><th>Besteld</th><th>Niet besteld</th><th>Conversie</th></tr></thead><tbody id="provtb"></tbody></table></div>'
   );
 
-  // ── REGIO HEATMAP ──────────────────────────────────────────────────────────
+  // ── REGIO HEATMAP ──────────────────────────────────────────────────────
   var allP=Object.keys(PV.Totaal||{}).sort(function(a,b){return PV.Totaal[b].n-PV.Totaal[a].n;});
   var hHdr='<tr><th>Provincie</th><th>Totaal</th>'+AN.map(function(a){return '<th>'+a+'</th>';}).join('')+'</tr>';
   var hRows=allP.filter(function(p){return PV.Totaal[p].n>=5;}).map(function(p){
-    var qt=PV.Totaal[p]; var cls=qt.c>=80?'pg':qt.c>=70?'po':'pr';
+    var qt=PV.Totaal[p],cls=qt.c>=80?'pg':qt.c>=70?'po':'pr';
     var cells=AN.map(function(a){
-      var ti=0,tb=0; M.forEach(function(m){var pm=(AD[a][m]&&AD[a][m].prov&&AD[a][m].prov[p])||{n:0,b:0};ti+=pm.n;tb+=pm.b;});
-      if(ti<3) return '<td style="color:#ddd;text-align:center">—</td>';
-      var c=Math.round(tb/ti*1000)/10; var hc=gc(c);
+      var ti=0,tb=0;M.forEach(function(m){var pm=AD[a][m]&&AD[a][m].prov&&AD[a][m].prov[p]?AD[a][m].prov[p]:{n:0,b:0};ti+=pm.n;tb+=pm.b;});
+      if(ti<3)return '<td style="color:#ddd;text-align:center">\u2014</td>';
+      var c=r1(tb/ti*100),hc=gc(c);
       return '<td style="background:'+hc+'22;text-align:center"><strong style="color:'+hc+'">'+c+'%</strong><br><small>'+tb+'/'+ti+'</small></td>';
     }).join('');
     return '<tr><td><strong>'+p+'</strong></td><td><span class="pill '+cls+'">'+qt.c+'%</span><br><small>'+qt.b+'/'+qt.n+'</small></td>'+cells+'</tr>';
   }).join('');
   addPage('regio',
-    '<div class="sec">Heatmap — adviseur per provincie (alle maanden totaal)</div>'+
-    '<p style="font-size:11px;color:#999;margin-bottom:11px">Groen ≥85% · Lichtgroen ≥75% · Oranje ≥65% · Rood &lt;65% · — = &lt;3 metingen</p>'+
+    '<div class="sec">Heatmap &mdash; adviseur per provincie (alle maanden)</div>'+
+    '<p style="font-size:11px;color:#999;margin-bottom:11px">Groen \u226585% \u00b7 lichtgroen \u226575% \u00b7 oranje \u226565% \u00b7 rood &lt;65% \u00b7 \u2014 = &lt;3 metingen</p>'+
     '<div class="scr"><table><thead>'+hHdr+'</thead><tbody>'+hRows+'</tbody></table></div>'
   );
 
-  // ── NABELLEN ─────────────────────────────────────────────────────────────
-  var nabKpis=M.map(function(m){var d=MD[m];return '<div class="kpi ka"><div class="klbl">'+m+' conv.</div><div class="kval">'+d.nc+'%</div><div class="ksub">'+d.nb+'/'+d.nr+' benaderd</div></div>';}).join('');
+  // ── NABELLEN ──────────────────────────────────────────────────────────
   var allRed={};
   M.forEach(function(m){Object.entries(MD[m].red||{}).forEach(function(e){allRed[e[0]]=(allRed[e[0]]||0)+e[1];});});
-  var nabRows=M.map(function(m){
-    var d=MD[m]; var cls=d.nc>=35?'pg':d.nc>=20?'po':'pr';
-    var mail=d.bom['Mail']||d.bom['mail']||0; var bel=d.bom['Bellen']||d.bom['bellen']||0;
+  var nabR=M.map(function(m){
+    var d=MD[m],cls=d.nc>=35?'pg':d.nc>=20?'po':'pr';
+    var mail=d.bom['Mail']||d.bom['mail']||0,bel=d.bom['Bellen']||d.bom['bellen']||0;
     return '<tr><td>'+m+'</td><td>'+d.nr+'</td><td>'+d.nb+'</td><td>'+(d.nr-d.nb)+'</td><td><span class="pill '+cls+'">'+d.nc+'%</span></td><td>'+mail+'</td><td>'+bel+'</td></tr>';
   }).join('');
-  var redenRows=Object.entries(allRed).sort(function(a,b){return b[1]-a[1];}).map(function(e){
-    var r=e[0]; var per=M.map(function(m){return '<td>'+(MD[m].red[r]||0)+'</td>';}).join('');
+  var rdnR=Object.entries(allRed).sort(function(a,b){return b[1]-a[1];}).map(function(e){
+    var r=e[0];var per=M.map(function(m){return '<td>'+(MD[m].red[r]||0)+'</td>';}).join('');
     return '<tr><td>'+r+'</td>'+per+'<td><strong>'+e[1]+'</strong></td></tr>';
   }).join('');
   addPage('nab',
-    '<div class="sec">Nabellen — overzicht alle maanden</div>'+
-    '<div class="kg">'+nabKpis+'</div>'+
-    '<div class="row2">'+
-    '<div class="card"><div class="ctitle">Nabellen conv% per maand</div><div style="position:relative;height:230px"><canvas id="cNab"></canvas></div></div>'+
-    '<div class="card"><div class="ctitle">Redenen geen bestelling</div><div style="position:relative;height:230px"><canvas id="cReden"></canvas></div></div>'+
+    '<div class="sec">Nabellen &mdash; overzicht</div>'+
+    '<div class="kg">'+M.map(function(m){var d=MD[m];return kpi('ka',d.nc+'%',m+' conv.',d.nb+'/'+d.nr+' benaderd');}).join('')+'</div>'+
+    '<div class="r2">'+
+    '<div class="cc"><div class="cct">Nabellen conv% per maand</div><div style="height:230px"><canvas id="cNab"></canvas></div></div>'+
+    '<div class="cc"><div class="cct">Redenen geen bestelling</div><div style="height:230px"><canvas id="cReden"></canvas></div></div>'+
     '</div>'+
-    '<div class="sec">Nabellen per maand</div>'+
-    '<div class="scr"><table><thead><tr><th>Maand</th><th>Benaderd</th><th>Besteld na</th><th>Niet best.</th><th>Conv%</th><th>Via mail</th><th>Via bellen</th></tr></thead><tbody>'+nabRows+'</tbody></table></div>'+
+    '<div class="sec">Per maand</div>'+
+    '<div class="scr"><table><thead><tr><th>Maand</th><th>Benaderd</th><th>Besteld na</th><th>Niet</th><th>Conv%</th><th>Mail</th><th>Bellen</th></tr></thead><tbody>'+nabR+'</tbody></table></div>'+
     '<div class="sec">Redenen per maand</div>'+
-    '<div class="scr"><table><thead><tr><th>Reden</th>'+M.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>Totaal</th></tr></thead><tbody>'+redenRows+'</tbody></table></div>'
+    '<div class="scr"><table><thead><tr><th>Reden</th>'+M.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>Totaal</th></tr></thead><tbody>'+rdnR+'</tbody></table></div>'
   );
 
-  // ── NABELLEN DETAIL ────────────────────────────────────────────────────────
+  // ── NABELLEN DETAIL ────────────────────────────────────────────────────
   var totContact=M.reduce(function(s,m){return s+MD[m].nr;},0);
-  var totConvNa=M.reduce(function(s,m){return s+MD[m].nb;},0);
+  var totNb=M.reduce(function(s,m){return s+MD[m].nb;},0);
   var totOpen=AN.reduce(function(s,a){return s+M.reduce(function(ss,m){return ss+(AD[a][m]?AD[a][m].openK:0);},0);},0);
   var totOpenW=AN.reduce(function(s,a){return s+M.reduce(function(ss,m){return ss+(AD[a][m]?AD[a][m].openW:0);},0);},0);
-  var snelAvg=M.map(function(m){return MD[m].snelConv;}).filter(function(v){return v>0;});
-  var snel=snelAvg.length?Math.round(snelAvg.reduce(function(a,b){return a+b;},0)/snelAvg.length*10)/10:0;
-  var laatAvg=M.map(function(m){return MD[m].laatConv;}).filter(function(v){return v>0;});
-  var laat=laatAvg.length?Math.round(laatAvg.reduce(function(a,b){return a+b;},0)/laatAvg.length*10)/10:0;
-
-  var nabAdvRows=AN.map(function(a){
+  var sCA=M.map(function(m){return MD[m].snelConv;}).filter(function(v){return v>0;});
+  var lCA=M.map(function(m){return MD[m].laatConv;}).filter(function(v){return v>0;});
+  var snelA=sCA.length?r1(sCA.reduce(function(a,b){return a+b;},0)/sCA.length):0;
+  var laatA=lCA.length?r1(lCA.reduce(function(a,b){return a+b;},0)/lCA.length):0;
+  var nabAdvR=AN.map(function(a){
     var allD=M.map(function(m){return AD[a][m];}).filter(Boolean);
-    if(!allD.length) return '';
-    var tot_n=allD.reduce(function(s,d){return s+d.n;},0);
-    var tot_b=allD.reduce(function(s,d){return s+d.b;},0);
-    var tot_contact=allD.reduce(function(s,d){return s+d.nr;},0);
-    var tot_cna=allD.reduce(function(s,d){return s+(d.convNa||0);},0);
-    var tot_open=allD.reduce(function(s,d){return s+d.openK;},0);
-    var tot_openW=allD.reduce(function(s,d){return s+d.openW;},0);
-    var cna_pct=tot_contact>0?Math.round(tot_cna/tot_contact*1000)/10:0;
-    var allRed2=allD.reduce(function(acc,d){Object.entries(d.red||{}).forEach(function(e){acc[e[0]]=(acc[e[0]]||0)+e[1];});return acc;},{});
-    var topR=Object.entries(allRed2).sort(function(a,b){return b[1]-a[1];})[0];
-    var cls=cna_pct>=20?'pg':cna_pct>=10?'po':'pr';
-    var ocls=tot_open>5?'style="background:#fff3e0;color:#e65100;font-weight:700"':'';
-    return '<tr><td><strong>'+a+'</strong></td><td>'+tot_n+'</td><td>'+tot_b+'</td><td>'+(tot_n-tot_b)+'</td><td>'+tot_contact+'</td><td><span class="pill '+cls+'">'+cna_pct+'%</span></td><td '+ocls+'>'+tot_open+'<br><small>'+ef(tot_openW)+'</small></td><td style="font-size:11px;color:#666">'+(topR?topR[0]:'—')+'</td></tr>';
+    if(!allD.length)return'';
+    var tn2=allD.reduce(function(s,d){return s+d.n;},0),tb2=allD.reduce(function(s,d){return s+d.b;},0);
+    var tc2=allD.reduce(function(s,d){return s+d.nr;},0),tna=allD.reduce(function(s,d){return s+(d.convNa||0);},0);
+    var top2=allD.reduce(function(s,d){return s+d.openK;},0),topW=allD.reduce(function(s,d){return s+d.openW;},0);
+    var cnap=tc2>0?r1(tna/tc2*100):0;
+    var tr2=allD.reduce(function(acc,d){Object.entries(d.red||{}).forEach(function(e){acc[e[0]]=(acc[e[0]]||0)+e[1];});return acc;},{});
+    var tr3=Object.entries(tr2).sort(function(a,b){return b[1]-a[1];})[0];
+    var cls=cnap>=20?'pg':cnap>=10?'po':'pr';
+    var oc=top2>5?'style="background:#fff3e0;color:#e65100;font-weight:700"':'';
+    return '<tr><td><strong>'+a+'</strong></td><td>'+tn2+'</td><td>'+tb2+'</td><td>'+(tn2-tb2)+'</td><td>'+tc2+'</td><td><span class="pill '+cls+'">'+cnap+'%</span></td><td '+oc+'>'+top2+'<br><small>'+ef(topW)+'</small></td><td style="font-size:11px;color:#666">'+(tr3?tr3[0]:'\u2014')+'</td></tr>';
   }).join('');
-
   addPage('nab2',
-    '<div class="sec sgr">🎯 Nabellen detail — alle maanden per adviseur</div>'+
+    '<div class="sec sgr">&#127919; Nabellen detail per adviseur</div>'+
     '<div class="kg">'+
-    '<div class="kpi kg2"><div class="klbl">Totaal benaderd</div><div class="kval">'+totContact+'</div></div>'+
-    '<div class="kpi ka"><div class="klbl">Besteld na contact</div><div class="kval">'+totConvNa+'</div><div class="ksub">'+(totContact>0?Math.round(totConvNa/totContact*1000)/10:'0')+'% conv</div></div>'+
-    '<div class="kpi kr"><div class="klbl">Open kansen</div><div class="kval">'+totOpen+'</div><div class="ksub">'+ef(totOpenW)+' te halen</div></div>'+
-    '<div class="kpi kb"><div class="klbl">Snel ≤14 dgn conv</div><div class="kval">'+snel+'%</div><div class="ksub">vs '+laat+'% bij laat</div></div>'+
+    kpi('kg2',totContact.toString(),'Totaal benaderd','alle maanden')+
+    kpi('ka',totNb.toString(),'Besteld na contact',(totContact>0?r1(totNb/totContact*100):0)+'% conv')+
+    kpi('kr',totOpen.toString(),'Open kansen',ef(totOpenW)+' te halen')+
+    kpi('kb',snelA+'%','Snel \u226414 dgn','vs '+laatA+'% bij laat')+
     '</div>'+
-    '<div class="ig2">'+
-    '<div class="ibox igood"><div class="it">⚡ Snel nabellen = meer resultaat</div><p>Contact binnen 14 dagen: <strong>'+snel+'%</strong>. Na 14 dagen: <strong>'+laat+'%</strong>. De eerste twee weken na meting zijn cruciaal.</p></div>'+
-    '<div class="ibox iwarn"><div class="it">🔴 '+totOpen+' open kansen — '+ef(totOpenW)+' te halen</div><p>Klanten zonder contact die niet bestelden. Prioriteer op waarde en bel binnen 14 dagen.</p></div>'+
-    '</div>'+
-    '<div class="row2"><div class="card full"><div class="ctitle">Per adviseur — direct / na contact / contact geen resultaat / open kansen</div>'+
-    '<div class="leg"><span><span class="dot" style="background:#27ae60"></span>Direct</span><span><span class="dot" style="background:#F59901"></span>Na contact</span><span><span class="dot" style="background:#ff9800"></span>Contact geen result.</span><span><span class="dot" style="background:#ef5350"></span>Open kansen</span></div>'+
-    '<div style="position:relative;height:310px"><canvas id="cNabAdv"></canvas></div></div></div>'+
-    '<div class="sec sgr">Per adviseur detail</div>'+
-    '<div class="scr"><table><thead><tr><th>Adviseur</th><th>Metingen</th><th>Direct best.</th><th>Niet direct</th><th>Contact</th><th>Conv na</th><th class="hg">Open kansen</th><th>Top reden</th></tr></thead><tbody>'+nabAdvRows+'</tbody></table></div>'+
-    '<div class="row2">'+
-    '<div class="card"><div class="ctitle">Mail vs bellen conv% per adviseur</div><div style="position:relative;height:250px"><canvas id="cMailVsBel"></canvas></div></div>'+
-    '<div class="card"><div class="ctitle">Gem. dagen tot contact</div><div style="position:relative;height:250px"><canvas id="cSnelheid"></canvas></div></div>'+
+    '<div class="r2"><div class="cc full"><div class="cct">Per adviseur &mdash; direct / na contact / geen resultaat / open kansen</div><div class="leg"><span><span class="dot" style="background:#27ae60"></span>Direct</span><span><span class="dot" style="background:#F59901"></span>Na contact</span><span><span class="dot" style="background:#ff9800"></span>Geen result.</span><span><span class="dot" style="background:#ef5350"></span>Open kansen</span></div><div style="height:310px"><canvas id="cNabAdv"></canvas></div></div></div>'+
+    '<div class="sec sgr">Detailtabel</div>'+
+    '<div class="scr"><table><thead><tr><th>Adviseur</th><th>Metingen</th><th>Direct</th><th>Niet direct</th><th>Contact</th><th>Conv na</th><th class="hg">Open kansen</th><th>Top reden</th></tr></thead><tbody>'+nabAdvR+'</tbody></table></div>'+
+    '<div class="r2">'+
+    '<div class="cc"><div class="cct">Mail vs bellen conv%</div><div style="height:250px"><canvas id="cMailVsBel"></canvas></div></div>'+
+    '<div class="cc"><div class="cct">Gem. dagen tot contact</div><div style="height:250px"><canvas id="cSnelheid"></canvas></div></div>'+
     '</div>'
   );
 
-  // ── PER MAAND PAGINA'S ────────────────────────────────────────────────────
-  M.forEach(function(m){
+  // ── PER MAAND PAGINA'S ──────────────────────────────────────────────────
+  // Each month page gets its OWN unique canvas IDs based on month index
+  M.forEach(function(m,mi){
     var d=MD[m];
+    var cAdvId='cMAdv'+mi;   // unique per month
+    var cProvId='cMProv'+mi; // unique per month
+    var wrapId='mWrap'+mi;
+
     var advR2=AN.map(function(a){
-      var ad=AD[a][m]; if(!ad) return '';
+      var ad=AD[a][m];if(!ad)return'';
       var prev=M.slice(0,M.indexOf(m)).filter(function(pm){return AD[a][pm];});
       var prevC=prev.length?AD[a][prev[prev.length-1]].conv:null;
       var cls=ad.conv>=70?'pg':ad.conv>=60?'po':'pr';
-      var vsStr=prevC!==null?dh(ad.conv,prevC):'—';
-      return '<tr><td><strong>'+a+'</strong></td><td>'+ad.n+'</td><td>'+ad.b+'</td><td>'+ad.niet+'</td><td><span class="pill '+cls+'">'+ad.conv+'%</span></td><td>'+ef(ad.wi)+'</td><td>'+ef(ad.wb)+'</td><td>'+vsStr+'</td></tr>';
+      var vs=prevC!==null?dh(ad.conv,prevC):'\u2014';
+      return '<tr><td><strong>'+a+'</strong></td><td>'+ad.n+'</td><td>'+ad.b+'</td><td>'+ad.niet+'</td><td><span class="pill '+cls+'">'+ad.conv+'%</span></td><td>'+ef(ad.wi)+'</td><td>'+ef(ad.wb)+'</td><td>'+vs+'</td></tr>';
     }).join('');
+
     var pvR=Object.entries(PV[m]||{}).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){
-      var p=e[0],v=e[1]; var cls=v.c>=75?'pg':v.c>=65?'po':'pr';
+      var p=e[0],v=e[1];var cls=v.c>=75?'pg':v.c>=65?'po':'pr';
       return '<tr><td><strong>'+p+'</strong></td><td>'+v.n+'</td><td>'+v.b+'</td><td>'+(v.n-v.b)+'</td><td><span class="pill '+cls+'">'+v.c+'%</span></td></tr>';
     }).join('');
-    addPage('m-'+m,
-      '<div class="sec spu">'+m+' — volledig detail</div>'+
+
+    addPage('m_'+m,
+      '<div class="sec spu">'+m+' &mdash; volledig detail</div>'+
       '<div class="kg">'+
-      '<div class="kpi kp"><div class="klbl">Ingemeten</div><div class="kval">'+d.n+'</div></div>'+
-      '<div class="kpi kp"><div class="klbl">Besteld</div><div class="kval">'+d.b+'</div><div class="ksub">van '+d.n+' metingen</div></div>'+
-      '<div class="kpi '+(d.conv>=75?'kg2':'kr')+'"><div class="klbl">Conversie</div><div class="kval" style="color:'+(d.conv>=75?GR:RD)+'">'+d.conv+'%</div></div>'+
-      '<div class="kpi"><div class="klbl">Waarde ingemeten</div><div class="kval" style="font-size:19px">'+ef(d.wi)+'</div></div>'+
-      '<div class="kpi"><div class="klbl">Waarde besteld</div><div class="kval" style="font-size:19px">'+ef(d.wb)+'</div></div>'+
-      '<div class="kpi"><div class="klbl">Conv% waarde</div><div class="kval">'+d.cwi+'%</div></div>'+
+      kpi('kp',d.n.toString(),'Ingemeten','')+
+      kpi('kp',d.b.toString(),'Besteld','van '+d.n+' metingen')+
+      kpi(d.conv>=75?'kg2':'kr','<span style="color:'+(d.conv>=75?GR:RD)+'">'+d.conv+'%</span>','Conversie','')+
+      kpi('',ef(d.wi),'Waarde ingemeten','','font-size:18px')+
+      kpi('',ef(d.wb),'Waarde besteld','','font-size:18px')+
+      kpi('',d.cwi+'%','Conv% waarde','')+
       '</div>'+
-      '<div class="row2">'+
-      '<div class="card"><div class="ctitle">Adviseurs '+m+' — conv%</div><div style="position:relative;height:260px"><canvas id="cM'+m+'Adv"></canvas></div></div>'+
-      '<div class="card"><div class="ctitle">Provincie — '+m+'</div><div style="position:relative;" id="wrap'+m+'"><canvas id="cM'+m+'Prov"></canvas></div></div>'+
+      '<div class="r2">'+
+      '<div class="cc"><div class="cct">Adviseurs '+m+' &mdash; conv%</div><div style="height:260px"><canvas id="'+cAdvId+'"></canvas></div></div>'+
+      '<div class="cc"><div class="cct">Provincie &mdash; '+m+'</div><div id="'+wrapId+'" style="position:relative"><canvas id="'+cProvId+'"></canvas></div></div>'+
       '</div>'+
       '<div class="sec spu">Per adviseur</div>'+
-      '<div class="scr"><table><thead><tr><th>Adviseur</th><th>Ing.</th><th>Best.</th><th>Niet</th><th>Conv%</th><th>Waarde ing.</th><th>Waarde best.</th><th>vs vorige mnd</th></tr></thead><tbody>'+advR2+
-      '<tr class="tr-tot"><td>Totaal</td><td>'+d.n+'</td><td>'+d.b+'</td><td>'+d.niet+'</td><td>'+pill(d.conv)+'</td><td>'+ef(d.wi)+'</td><td>'+ef(d.wb)+'</td><td></td></tr>'+
+      '<div class="scr"><table><thead><tr><th>Adviseur</th><th>Ing.</th><th>Best.</th><th>Niet</th><th>Conv%</th><th>Waarde ing.</th><th>Waarde best.</th><th>vs vorige mnd</th></tr></thead><tbody>'+
+      advR2+
+      '<tr class="tr-tot"><td>Totaal</td><td>'+d.n+'</td><td>'+d.b+'</td><td>'+d.niet+'</td><td>'+pc(d.conv)+'</td><td>'+ef(d.wi)+'</td><td>'+ef(d.wb)+'</td><td></td></tr>'+
       '</tbody></table></div>'+
       '<div class="sec spu">Provincie</div>'+
       '<div class="scr"><table><thead><tr><th>Provincie</th><th>Ingemeten</th><th>Besteld</th><th>Niet</th><th>Conversie</th></tr></thead><tbody>'+pvR+'</tbody></table></div>'
     );
+
+    // Store canvas IDs on the page element so initMonthCharts can find them
+    var pg=document.getElementById('pg_m_'+m);
+    if(pg){pg.setAttribute('data-cadv',cAdvId);pg.setAttribute('data-cprov',cProvId);pg.setAttribute('data-wrap',wrapId);}
   });
 
-  // ── NIEUWE BESTELLINGEN ────────────────────────────────────────────────────
+  // ── NIEUWE BESTELLINGEN ────────────────────────────────────────────────
   if(NC.length){
     var ncMail=NC.filter(function(x){return x.contact==='Mail';}).length;
     var ncBel=NC.filter(function(x){return x.contact==='Bellen';}).length;
     var ncW=NC.reduce(function(s,x){return s+x.waarde;},0);
     var ncR=NC.map(function(x){
-      var b=x.contact==='Mail'?'<span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">📧 Mail</span>':
-        x.contact==='Bellen'?'<span style="background:#e8f5e9;color:#1b5e20;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">📞 Bellen</span>':'<span style="color:#aaa">—</span>';
-      return '<tr><td><strong>'+x.naam+'</strong></td><td>'+x.maand+'</td><td>'+x.adv+'</td><td>'+ef(x.waarde)+'</td><td>'+b+'</td><td style="font-size:11px;color:#666">'+(x.reden||'—')+'</td></tr>';
+      var b=x.contact==='Mail'?'<span style="background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128231; Mail</span>':x.contact==='Bellen'?'<span style="background:#e8f5e9;color:#1b5e20;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:700">&#128222; Bellen</span>':'<span style="color:#aaa">\u2014</span>';
+      return '<tr><td><strong>'+x.naam+'</strong></td><td>'+x.maand+'</td><td>'+x.adv+'</td><td>'+ef(x.waarde)+'</td><td>'+b+'</td><td style="font-size:11px;color:#666">'+(x.reden||'\u2014')+'</td></tr>';
     }).join('');
-    var ncAdv={};
-    NC.forEach(function(x){if(!ncAdv[x.adv])ncAdv[x.adv]={n:0,w:0,mail:0,bel:0};ncAdv[x.adv].n++;ncAdv[x.adv].w+=x.waarde;if(x.contact==='Mail')ncAdv[x.adv].mail++;if(x.contact==='Bellen')ncAdv[x.adv].bel++;});
-    var ncAR=Object.entries(ncAdv).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){var a=e[0],v=e[1];return '<tr><td><strong>'+a+'</strong></td><td>'+v.n+'</td><td>'+ef(v.w)+'</td><td>'+(v.mail?'📧 '+v.mail:'—')+'</td><td>'+(v.bel?'📞 '+v.bel:'—')+'</td></tr>';}).join('');
+    var ncAd={};NC.forEach(function(x){if(!ncAd[x.adv])ncAd[x.adv]={n:0,w:0,mail:0,bel:0};ncAd[x.adv].n++;ncAd[x.adv].w+=x.waarde;if(x.contact==='Mail')ncAd[x.adv].mail++;if(x.contact==='Bellen')ncAd[x.adv].bel++;});
+    var ncAR=Object.entries(ncAd).sort(function(a,b){return b[1].n-a[1].n;}).map(function(e){var a=e[0],v=e[1];return '<tr><td><strong>'+a+'</strong></td><td>'+v.n+'</td><td>'+ef(v.w)+'</td><td>'+(v.mail?'&#128231; '+v.mail:'\u2014')+'</td><td>'+(v.bel?'&#128222; '+v.bel:'\u2014')+'</td></tr>';}).join('');
     addPage('nc',
-      '<div class="ncb"><div class="ico">🆕</div><div class="txt"><strong>'+NC.length+' nieuwe bestellingen t.o.v. vorige upload</strong>Puur door actief nabellen en mailen. Extra omzet: <strong>'+ef(ncW)+'</strong> · Mail: <strong>'+ncMail+'x</strong> · Bellen: <strong>'+ncBel+'x</strong></div></div>'+
-      '<div class="kg">'+
-      '<div class="kpi kb"><div class="klbl">Nieuwe best.</div><div class="kval" style="color:'+BL+'">'+NC.length+'</div></div>'+
-      '<div class="kpi kb"><div class="klbl">Extra omzet</div><div class="kval" style="font-size:19px">'+ef(ncW)+'</div></div>'+
-      '<div class="kpi kg2"><div class="klbl">Via mail</div><div class="kval">'+ncMail+'x</div></div>'+
-      '<div class="kpi kg2"><div class="klbl">Via bellen</div><div class="kval">'+ncBel+'x</div></div>'+
-      '</div>'+
-      '<div class="ibox ibl"><div class="it">Hoe werkt detectie?</div><p>Per order wordt kolom <strong>Besteld</strong> vergeleken tussen de vorige upload en de huidige. Leeg → gevuld = nieuwe bestelling. Kolom <strong>Bel of mail</strong> toont het kanaal.</p></div>'+
+      '<div class="ncb"><div class="ico">&#128338;</div><div class="txt"><strong>'+NC.length+' nieuwe bestellingen t.o.v. vorige upload</strong>Klanten die eerder NIET besteld hadden en nu WEL.<br>Extra omzet: <strong>'+ef(ncW)+'</strong> &nbsp;&middot;&nbsp; Mail: <strong>'+ncMail+'x</strong> &nbsp;&middot;&nbsp; Bellen: <strong>'+ncBel+'x</strong></div></div>'+
+      '<div class="kg">'+kpi('kb',NC.length.toString(),'Nieuwe best.','vs vorige upload')+kpi('kb',ef(ncW),'Extra omzet','')+kpi('kg2',ncMail+'x','Via mail','')+kpi('kg2',ncBel+'x','Via bellen','')+'</div>'+
       '<div class="sec sbl">Alle nieuwe bestellingen</div>'+
       '<div class="scr"><table><thead><tr><th class="hb">Klant</th><th class="hb">Maand</th><th class="hb">Adviseur</th><th class="hb">Waarde</th><th class="hb">Via</th><th class="hb">Reden</th></tr></thead><tbody>'+ncR+'</tbody></table></div>'+
-      '<div class="row2"><div class="card"><div class="ctitle">Mail vs bellen</div><div style="position:relative;height:210px"><canvas id="cNcMeth"></canvas></div></div>'+
-      '<div class="card"><div class="ctitle">Per maand</div><div style="position:relative;height:210px"><canvas id="cNcMnd"></canvas></div></div></div>'+
+      '<div class="r2"><div class="cc"><div class="cct">Mail vs bellen</div><div style="height:210px"><canvas id="cNcMeth"></canvas></div></div><div class="cc"><div class="cct">Per maand</div><div style="height:210px"><canvas id="cNcMnd"></canvas></div></div></div>'+
       '<div class="sec sbl">Per adviseur</div>'+
-      '<div class="scr"><table><thead><tr><th class="hb">Adviseur</th><th class="hb">Nieuwe best.</th><th class="hb">Extra waarde</th><th class="hb">Via mail</th><th class="hb">Via bellen</th></tr></thead><tbody>'+ncAR+'</tbody></table></div>'
+      '<div class="scr"><table><thead><tr><th class="hb">Adviseur</th><th class="hb">Nieuwe best.</th><th class="hb">Extra waarde</th><th class="hb">Mail</th><th class="hb">Bellen</th></tr></thead><tbody>'+ncAR+'</tbody></table></div>'
     );
-    window._ncData={NC:NC,ncMail:ncMail,ncBel:ncBel,M:M};
+    window._ncCache={NC:NC,ncMail:ncMail,ncBel:ncBel,M:M};
   }
 
-  // ── DOWNLOADS ─────────────────────────────────────────────────────────────
-  var dlBtns=AN.map(function(a){return '<div class="dl-btn" onclick="dlAdv(\''+a+'\')"><div style="font-size:22px">📄</div><div>'+a+'</div></div>';}).join('');
+  // ── DOWNLOADS ──────────────────────────────────────────────────────────
+  var dlB=AN.map(function(a){return '<div class="db" onclick="dlAdv(\''+a+'\')"><div style="font-size:22px">&#128196;</div><div>'+a+'</div></div>';}).join('');
   addPage('dl',
     '<div class="sec">Downloads</div>'+
-    '<div class="ibox"><div class="it">ℹ️ Persoonlijke adviseurs-dashboards</div><p>Klik op een naam om het persoonlijk dashboard als HTML-bestand te downloaden. Dit bestand bevat alleen de data van die adviseur en kan via WhatsApp of GitHub gedeeld worden.</p></div>'+
-    '<div class="dl-grid">'+dlBtns+'</div>'+
-    '<button class="dl-btn-main" onclick="dlAll()">⬇️ Download alle '+AN.length+' dashboards</button>'+
+    '<div class="ibox"><div class="it">&#8505;&#65039; Persoonlijke adviseurs-dashboards</div><p>Klik op een naam voor een persoonlijk dashboard met alleen die adviseur\'s data. Deelbaar via WhatsApp of GitHub.</p></div>'+
+    '<div class="dg">'+dlB+'</div>'+
+    '<button class="dbm" onclick="dlAll()">&#8659;&#65039; Download alle '+AN.length+' dashboards</button>'+
     '<div class="sec" style="margin-top:16px">Beheerdersdashboard</div>'+
-    '<button class="dl-btn-main" onclick="dlSelf()">⬇️ Download dit dashboard (index.html)</button>'+
-    '<p style="font-size:11px;color:#bbb;margin-top:8px">Let op: het gedownloade dashboard bevat geen data — die wordt ingeladen via de upload. Upload dit bestand naar GitHub als index.html.</p>'
+    '<button class="dbm" onclick="dlSelf()">&#8659;&#65039; Download index.html</button>'
   );
 
-  // ── UPLOAD (placeholder page) ──────────────────────────────────────────────
-  var upDiv=document.createElement('div');
-  upDiv.className='page'; upDiv.id='page-upload';
-  document.getElementById('pages').appendChild(upDiv);
+  // init provincie na opbouw
+  setTimeout(function(){selProv('Totaal',document.querySelector('.mb.active'));},150);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CHARTS
-// ═══════════════════════════════════════════════════════════════════════════
-function initCharts(D){
-  var M=D.months, AN=D.adviseurs, MD=D.MD, AD=D.AD, PV=D.PV;
-  var mColors=M.map(function(_,i){return i<3?[O,D,L,'#ce93d8','#27ae60','#1565c0','#9c27b0'][i]:[O,D,L,'#ce93d8','#27ae60','#1565c0','#9c27b0'][i%7];});
+function kpi(cls,val,lbl,sub,vstyle){
+  return '<div class="kpi '+cls+'"><div class="klbl">'+lbl+'</div><div class="kval"'+(vstyle?' style="'+vstyle+'"':'')+'>'+val+'</div>'+(sub?'<div class="ksub">'+sub+'</div>':'')+'</div>';
+}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────
+function mkChart(id,cfg){
+  if(S.charts[id]){try{S.charts[id].destroy();}catch(e){}}
+  var el=document.getElementById(id);
+  if(!el){return;}
+  try{S.charts[id]=new Chart(el,cfg);}catch(e){console.error('Chart error '+id,e);}
+}
+
+function initMainCharts(D){
+  var M=D.months,AN=D.adviseurs,MD=D.MD,AD=D.AD;
+  var MCOLS=[O,DK,L,P,GR,BL,PU,'#ff9800','#009688','#795548','#607d8b','#e91e63'];
   var q1M=M.slice(0,Math.min(3,M.length));
-  var q1gem=q1M.length?Math.round(q1M.reduce(function(s,m){return s+MD[m].conv;},0)/q1M.length*10)/10:0;
+  var q1g=q1M.length?r1(q1M.reduce(function(s,m){return s+MD[m].conv;},0)/q1M.length):0;
 
   mkChart('cConvBar',{type:'bar',data:{labels:M,datasets:[
-    {data:M.map(function(m){return MD[m].conv;}),backgroundColor:mColors,borderRadius:5},
-    {type:'line',data:M.map(function(){return q1gem;}),borderColor:'#aaa',borderDash:[5,3],backgroundColor:'transparent',pointRadius:0,borderWidth:1.5}
+    {data:M.map(function(m){return MD[m].conv;}),backgroundColor:M.map(function(_,i){return MCOLS[i%MCOLS.length];}),borderRadius:5},
+    {type:'line',data:M.map(function(){return q1g;}),borderColor:'#aaa',borderDash:[5,3],backgroundColor:'transparent',pointRadius:0,borderWidth:1.5}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.raw+'%';}}}},scales:{y:{min:50,max:90,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
 
   mkChart('cWaarde',{type:'bar',data:{labels:M,datasets:[
-    {data:M.map(function(m){return MD[m].wi;}),backgroundColor:mColors.map(function(c){return c+'88';})},
-    {data:M.map(function(m){return MD[m].wb;}),backgroundColor:mColors}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0f0f0'},ticks:{callback:function(v){return '€'+Math.round(v/1000)+'k';}}}}}});
+    {data:M.map(function(m){return MD[m].wi;}),backgroundColor:M.map(function(_,i){return MCOLS[i%MCOLS.length]+'88';})},
+    {data:M.map(function(m){return MD[m].wb;}),backgroundColor:M.map(function(_,i){return MCOLS[i%MCOLS.length];})}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'#f0f0f0'},ticks:{callback:function(v){return '\u20ac'+Math.round(v/1000)+'k';}}}}}});
 
-  mkChart('cAdvConv',{type:'bar',data:{labels:AN,datasets:M.map(function(m,i){return{label:m.slice(0,3),data:AN.map(function(a){return AD[a][m]?AD[a][m].conv:0;}),backgroundColor:mColors[i]};})},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}},tooltip:{callbacks:{label:function(ctx){var a=AN[ctx.dataIndex],m=M[ctx.datasetIndex],d=AD[a][m];return d?m+': '+d.conv+'% ('+d.b+'/'+d.n+')':'';}}}},scales:{x:{ticks:{autoSkip:false}},y:{min:35,max:100,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
+  mkChart('cAdvConv',{type:'bar',data:{labels:AN,datasets:M.map(function(m,i){return{label:m.slice(0,3),data:AN.map(function(a){return AD[a][m]?AD[a][m].conv:0;}),backgroundColor:MCOLS[i%MCOLS.length]};})},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}},tooltip:{callbacks:{label:function(ctx){var a=AN[ctx.dataIndex],m=M[ctx.datasetIndex],d=AD[a][m];return d?m+': '+d.conv+'% ('+d.b+'/'+d.n+')':'';}}}},scales:{x:{ticks:{autoSkip:false}},y:{min:35,max:100,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
 
-  mkChart('cAdvWaarde',{type:'bar',data:{labels:AN,datasets:M.map(function(m,i){return{label:m.slice(0,3),data:AN.map(function(a){return AD[a][m]?AD[a][m].wi:0;}),backgroundColor:mColors[i]};})},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}}},scales:{x:{ticks:{autoSkip:false}},y:{grid:{color:'#f0f0f0'},ticks:{callback:function(v){return '€'+Math.round(v/1000)+'k';}}}}}});
+  mkChart('cAdvWaarde',{type:'bar',data:{labels:AN,datasets:M.map(function(m,i){return{label:m.slice(0,3),data:AN.map(function(a){return AD[a][m]?AD[a][m].wi:0;}),backgroundColor:MCOLS[i%MCOLS.length]};})},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}}},scales:{x:{ticks:{autoSkip:false}},y:{grid:{color:'#f0f0f0'},ticks:{callback:function(v){return '\u20ac'+Math.round(v/1000)+'k';}}}}}});
 
-  // Provincie
-  window._cP=null; window._cPV=null;
-  selProv('Totaal',document.querySelector('.mb.active'));
+  mkChart('cNab',{type:'bar',data:{labels:M,datasets:[{data:M.map(function(m){return MD[m].nc;}),backgroundColor:M.map(function(_,i){return MCOLS[i%MCOLS.length];}),borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var m=M[ctx.dataIndex];return ctx.raw+'% ('+MD[m].nb+'/'+MD[m].nr+')';}}}},scales:{y:{min:0,max:60,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
 
-  // Nabellen
-  mkChart('cNab',{type:'bar',data:{labels:M,datasets:[{data:M.map(function(m){return MD[m].nc;}),backgroundColor:mColors,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var m=M[ctx.dataIndex];return ctx.raw+'% ('+MD[m].nb+'/'+MD[m].nr+')';}}}},scales:{y:{min:0,max:60,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
-
-  var allRed={};
-  M.forEach(function(m){Object.entries(MD[m].red||{}).forEach(function(e){allRed[e[0]]=(allRed[e[0]]||0)+e[1];});});
+  var allRed={};M.forEach(function(m){Object.entries(MD[m].red||{}).forEach(function(e){allRed[e[0]]=(allRed[e[0]]||0)+e[1];});});
   var rs=Object.entries(allRed).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-  mkChart('cReden',{type:'doughnut',data:{labels:rs.map(function(x){return x[0].length>24?x[0].slice(0,24)+'...':x[0];}),datasets:[{data:rs.map(function(x){return x[1];}),backgroundColor:[D,O,RD,'#95a5a6',GR,L,'#9b59b6',BL],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}}}});
+  mkChart('cReden',{type:'doughnut',data:{labels:rs.map(function(x){return x[0].length>24?x[0].slice(0,24)+'...':x[0];}),datasets:[{data:rs.map(function(x){return x[1];}),backgroundColor:[DK,O,RD,'#95a5a6',GR,L,'#9b59b6',BL],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}}}}});
 }
 
-function initNab2Charts(){
-  var D=S.data, M=D.months, AN=D.adviseurs, AD=D.AD;
+function initNab2Charts(D){
+  var Dx=D||S.data;if(!Dx)return;
+  var M=Dx.months,AN=Dx.adviseurs,AD=Dx.AD;
   mkChart('cNabAdv',{type:'bar',data:{labels:AN,datasets:[
     {label:'Direct',data:AN.map(function(a){return M.reduce(function(s,m){return s+(AD[a][m]?AD[a][m].b:0);},0);}),backgroundColor:GR,borderRadius:2},
     {label:'Na contact',data:AN.map(function(a){return M.reduce(function(s,m){return s+(AD[a][m]?AD[a][m].convNa||0:0);},0);}),backgroundColor:O,borderRadius:2},
@@ -863,187 +706,145 @@ function initNab2Charts(){
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}}},scales:{x:{stacked:true,ticks:{autoSkip:false}},y:{stacked:true,grid:{color:'#f0f0f0'}}}}});
 
   mkChart('cMailVsBel',{type:'bar',data:{labels:AN,datasets:[
-    {label:'Mail conv%',data:AN.map(function(a){var arr=M.filter(function(m){return AD[a][m]&&AD[a][m].mail>0;});return arr.length?Math.round(arr.reduce(function(s,m){return s+AD[a][m].mailConv*AD[a][m].mail;},0)/arr.reduce(function(s,m){return s+AD[a][m].mail;},0)*10)/10:0;}),backgroundColor:BL,borderRadius:3},
-    {label:'Bellen conv%',data:AN.map(function(a){var arr=M.filter(function(m){return AD[a][m]&&AD[a][m].bellen>0;});return arr.length?Math.round(arr.reduce(function(s,m){return s+AD[a][m].belConv*AD[a][m].bellen;},0)/arr.reduce(function(s,m){return s+AD[a][m].bellen;},0)*10)/10:0;}),backgroundColor:O,borderRadius:3}
+    {label:'Mail %',data:AN.map(function(a){var arr=M.filter(function(m){return AD[a][m]&&AD[a][m].mail>0;});return arr.length?r1(arr.reduce(function(s,m){return s+AD[a][m].mailConv*AD[a][m].mail;},0)/arr.reduce(function(s,m){return s+AD[a][m].mail;},0)):0;}),backgroundColor:BL,borderRadius:3},
+    {label:'Bellen %',data:AN.map(function(a){var arr=M.filter(function(m){return AD[a][m]&&AD[a][m].bellen>0;});return arr.length?r1(arr.reduce(function(s,m){return s+AD[a][m].belConv*AD[a][m].bellen;},0)/arr.reduce(function(s,m){return s+AD[a][m].bellen;},0)):0;}),backgroundColor:O,borderRadius:3}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}}},scales:{x:{ticks:{autoSkip:false}},y:{min:0,max:50,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
 
-  mkChart('cSnelheid',{type:'bar',data:{labels:AN,datasets:[{data:AN.map(function(a){var arr=M.filter(function(m){return AD[a][m]&&AD[a][m].gemD>0;});return arr.length?Math.round(arr.reduce(function(s,m){return s+AD[a][m].gemD;},0)/arr.length*10)/10:0;}),backgroundColor:PU,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.raw+' dagen';}}}},scales:{x:{ticks:{autoSkip:false}},y:{grid:{color:'#f0f0f0'}}}}});
+  mkChart('cSnelheid',{type:'bar',data:{labels:AN,datasets:[{data:AN.map(function(a){var arr=M.filter(function(m){return AD[a][m]&&AD[a][m].gemD>0;});return arr.length?r1(arr.reduce(function(s,m){return s+AD[a][m].gemD;},0)/arr.length):0;}),backgroundColor:PU,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.raw+' dagen';}}}},scales:{x:{ticks:{autoSkip:false}},y:{grid:{color:'#f0f0f0'}}}}});
 }
 
-function initNcCharts(){
-  if(!window._ncData) return;
-  var nc=window._ncData;
-  mkChart('cNcMeth',{type:'doughnut',data:{labels:['📧 Mail ('+nc.ncMail+'x)','📞 Bellen ('+nc.ncBel+'x)'],datasets:[{data:[nc.ncMail,nc.ncBel],backgroundColor:[BL,O],borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12},boxWidth:12}}}}});
+function initNcCharts(D){
+  if(!window._ncCache)return;
+  var nc=window._ncCache;
+  mkChart('cNcMeth',{type:'doughnut',data:{labels:['\ud83d\udce7 Mail ('+nc.ncMail+'x)','\ud83d\udcde Bellen ('+nc.ncBel+'x)'],datasets:[{data:[nc.ncMail,nc.ncBel],backgroundColor:[BL,O],borderWidth:3,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12},boxWidth:12}}}}});
   var nm={};nc.M.forEach(function(m){nm[m]=0;});nc.NC.forEach(function(x){if(nm[x.maand]!==undefined)nm[x.maand]++;});
   mkChart('cNcMnd',{type:'bar',data:{labels:Object.keys(nm),datasets:[{data:Object.values(nm),backgroundColor:BL,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,ticks:{stepSize:1},grid:{color:'#f0f0f0'}}}}});
 }
 
-function initMonthCharts(m){
-  var D=S.data, AN=D.adviseurs, AD=D.AD, PV=D.PV, M=D.months;
+function initMonthCharts(D,m){
+  var Dx=D||S.data;if(!Dx)return;
+  var AN=Dx.adviseurs,AD=Dx.AD,PV=Dx.PV,M=Dx.months;
+
+  // Get canvas IDs from the page element's data attributes
+  var pg=document.getElementById('pg_m_'+m);
+  if(!pg)return;
+  var cAdvId=pg.getAttribute('data-cadv');
+  var cProvId=pg.getAttribute('data-cprov');
+  var wrapId=pg.getAttribute('data-wrap');
+
   var q1M=M.slice(0,Math.min(3,M.length));
   var ac=AN.map(function(a){var c=AD[a][m]?AD[a][m].conv:0;return c>=75?GR:c>=65?O:c>=55?'#ff9800':RD;});
-  var q1r=AN.map(function(a){var arr=q1M.filter(function(mm){return AD[a][mm];});return arr.length?Math.round(arr.reduce(function(s,mm){return s+AD[a][mm].conv;},0)/arr.length*10)/10:0;});
-  mkChart('cM'+m+'Adv',{type:'bar',data:{labels:AN,datasets:[{label:m,data:AN.map(function(a){return AD[a][m]?AD[a][m].conv:0;}),backgroundColor:ac,borderRadius:4},{label:'Q1 gem.',data:q1r,backgroundColor:'rgba(45,45,45,0.18)',borderColor:D,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.raw+'%';}}}},scales:{x:{ticks:{autoSkip:false}},y:{min:30,max:100,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
+  var q1r=AN.map(function(a){var arr=q1M.filter(function(mm){return AD[a][mm];});return arr.length?r1(arr.reduce(function(s,mm){return s+AD[a][mm].conv;},0)/arr.length):0;});
+
+  mkChart(cAdvId,{type:'bar',data:{labels:AN,datasets:[
+    {label:m,data:AN.map(function(a){return AD[a][m]?AD[a][m].conv:0;}),backgroundColor:ac,borderRadius:4},
+    {label:'Q1 gem.',data:q1r,backgroundColor:'rgba(45,45,45,0.18)',borderColor:DK,borderWidth:1.5}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11}}},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.raw+'%';}}}},scales:{x:{ticks:{autoSkip:false}},y:{min:30,max:100,grid:{color:'#f0f0f0'},ticks:{callback:function(v){return v+'%';}}}}}});
+
   var aps=Object.entries(PV[m]||{}).sort(function(a,b){return b[1].c-a[1].c;});
   var aph=Math.max(220,aps.length*38+60);
-  var el=document.getElementById('wrap'+m); if(el) el.style.height=aph+'px';
-  mkChart('cM'+m+'Prov',{type:'bar',data:{labels:aps.map(function(x){return x[0];}),datasets:[{data:aps.map(function(x){return x[1].c;}),backgroundColor:aps.map(function(x){return gc(x[1].c);})}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return aps[ctx.dataIndex][1].c+'% ('+aps[ctx.dataIndex][1].b+'/'+aps[ctx.dataIndex][1].n+')';}}}},scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+'%';}},grid:{color:'#f0f0f0'}},y:{ticks:{autoSkip:false,font:{size:10}}}}}});
+  var wrap=document.getElementById(wrapId);if(wrap)wrap.style.height=aph+'px';
+
+  mkChart(cProvId,{type:'bar',data:{labels:aps.map(function(x){return x[0];}),datasets:[{data:aps.map(function(x){return x[1].c;}),backgroundColor:aps.map(function(x){return gc(x[1].c);})}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return aps[ctx.dataIndex][1].c+'% ('+aps[ctx.dataIndex][1].b+'/'+aps[ctx.dataIndex][1].n+')';}}}},scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+'%';}},grid:{color:'#f0f0f0'}},y:{ticks:{autoSkip:false,font:{size:10}}}}}});
 }
 
-// ── provincie interactive ────────────────────────────────────────────────
+// ── provincie ─────────────────────────────────────────────────────────────
+var _cP=null,_cPV=null;
 function selProv(m,el){
-  if(!S.data) return;
+  if(!S.data)return;
   var PV=S.data.PV;
   document.querySelectorAll('.mb').forEach(function(b){b.classList.remove('active');});
-  if(el) el.classList.add('active');
+  if(el)el.classList.add('active');
   var d=PV[m]||{};
-  document.getElementById('ptitle').textContent='Conversie % — '+m;
-  document.getElementById('pvtitle').textContent='Volume — '+m;
+  var pt=document.getElementById('ptitle');if(pt)pt.textContent='Conversie % \u2014 '+m;
+  var pvt=document.getElementById('pvtitle');if(pvt)pvt.textContent='Volume \u2014 '+m;
   var s=Object.entries(d).sort(function(a,b){return b[1].c-a[1].c;});
-  var h=Math.max(240,s.length*40+60);
-  document.getElementById('pwrap').style.height=h+'px';
-  if(window._cP){window._cP.destroy();window._cP=null;}
-  window._cP=new Chart(document.getElementById('cProv'),{type:'bar',data:{labels:s.map(function(x){return x[0];}),datasets:[{data:s.map(function(x){return x[1].c;}),backgroundColor:s.map(function(x){return gc(x[1].c);})}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return s[ctx.dataIndex][1].c+'% ('+s[ctx.dataIndex][1].b+'/'+s[ctx.dataIndex][1].n+')';}}}},scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+'%';}},grid:{color:'#f0f0f0'}},y:{ticks:{autoSkip:false,font:{size:11}}}}}});
+  var h2=Math.max(240,s.length*40+60);
+  var pw=document.getElementById('pwrap');if(pw)pw.style.height=h2+'px';
+  if(_cP){_cP.destroy();_cP=null;}
+  if(!document.getElementById('cProv'))return;
+  _cP=new Chart(document.getElementById('cProv'),{type:'bar',data:{labels:s.map(function(x){return x[0];}),datasets:[{data:s.map(function(x){return x[1].c;}),backgroundColor:s.map(function(x){return gc(x[1].c);})}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return s[ctx.dataIndex][1].c+'% ('+s[ctx.dataIndex][1].b+'/'+s[ctx.dataIndex][1].n+')';}}}},scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+'%';}},grid:{color:'#f0f0f0'}},y:{ticks:{autoSkip:false,font:{size:11}}}}}});
   var vs=Object.entries(d).sort(function(a,b){return b[1].n-a[1].n;});
-  if(window._cPV){window._cPV.destroy();window._cPV=null;}
-  window._cPV=new Chart(document.getElementById('cProvVol'),{type:'bar',data:{labels:vs.map(function(x){return x[0];}),datasets:[{data:vs.map(function(x){return x[1].n;}),backgroundColor:L},{data:vs.map(function(x){return x[1].b;}),backgroundColor:O}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false,maxRotation:45,font:{size:11}}},y:{grid:{color:'#f0f0f0'}}}}});
-  var tb=document.getElementById('provtb'); if(!tb) return; tb.innerHTML='';
+  if(_cPV){_cPV.destroy();_cPV=null;}
+  if(!document.getElementById('cProvVol'))return;
+  _cPV=new Chart(document.getElementById('cProvVol'),{type:'bar',data:{labels:vs.map(function(x){return x[0];}),datasets:[{data:vs.map(function(x){return x[1].n;}),backgroundColor:L},{data:vs.map(function(x){return x[1].b;}),backgroundColor:O}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{autoSkip:false,maxRotation:45,font:{size:11}}},y:{grid:{color:'#f0f0f0'}}}}});
+  var tb=document.getElementById('provtb');if(!tb)return;tb.innerHTML='';
   vs.forEach(function(x){var p=x[0],v=x[1],cls=v.c>=75?'pg':v.c>=65?'po':'pr';tb.innerHTML+='<tr><td><strong>'+p+'</strong></td><td>'+v.n+'</td><td>'+v.b+'</td><td>'+(v.n-v.b)+'</td><td><span class="pill '+cls+'">'+v.c+'%</span></td></tr>';});
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// ADVISEUR DASHBOARD GENERATOR
-// ═══════════════════════════════════════════════════════════════════════════
+// ── adviseur download ──────────────────────────────────────────────────────
 function buildAdvHTML(adv){
-  var D=S.data, M=D.months, MD=D.MD, AD=D.AD;
+  var D=S.data,M=D.months,MD=D.MD,AD=D.AD;
   var d=AD[adv]||{};
-  var totN=M.reduce(function(s,m){return s+(d[m]?d[m].n:0);},0);
-  var totB=M.reduce(function(s,m){return s+(d[m]?d[m].b:0);},0);
-  var totWi=M.reduce(function(s,m){return s+(d[m]?d[m].wi:0);},0);
-  var totWb=M.reduce(function(s,m){return s+(d[m]?d[m].wb:0);},0);
-  var totC=totN>0?Math.round(totB/totN*1000)/10:0;
-  var teamGem=Math.round(M.reduce(function(s,m){return s+MD[m].conv;},0)/M.length*10)/10;
-  var diff=Math.round((totC-teamGem)*10)/10;
-  var diffCol=diff>=0?'#27ae60':'#e74c3c';
-  var diffS=diff>=0?'+':'';
-
-  var convVals=JSON.stringify(M.map(function(m){return d[m]?d[m].conv:0;}));
-  var teamVals=JSON.stringify(M.map(function(m){return MD[m].conv;}));
-  var wiVals=JSON.stringify(M.map(function(m){return d[m]?d[m].wi:0;}));
-  var wbVals=JSON.stringify(M.map(function(m){return d[m]?d[m].wb:0;}));
-  var bVals=JSON.stringify(M.map(function(m){return d[m]?d[m].b:0;}));
-  var nVals=JSON.stringify(M.map(function(m){return d[m]?d[m].niet:0;}));
-  var nabVals=JSON.stringify(M.map(function(m){return d[m]?d[m].nc:0;}));
-
-  // Province totaal
+  var tN=M.reduce(function(s,m){return s+(d[m]?d[m].n:0);},0);
+  var tB=M.reduce(function(s,m){return s+(d[m]?d[m].b:0);},0);
+  var tWi=M.reduce(function(s,m){return s+(d[m]?d[m].wi:0);},0);
+  var tWb=M.reduce(function(s,m){return s+(d[m]?d[m].wb:0);},0);
+  var tC=tN>0?r1(tB/tN*100):0;
+  var tGem=r1(M.reduce(function(s,m){return s+MD[m].conv;},0)/M.length);
+  var diff=r1(tC-tGem);
   var pvAcc={};
-  M.forEach(function(m){if(!d[m]) return;Object.entries(d[m].prov||{}).forEach(function(e){var p=e[0],v=e[1];if(!pvAcc[p])pvAcc[p]={n:0,b:0};pvAcc[p].n+=v.n;pvAcc[p].b+=v.b;});});
-  Object.keys(pvAcc).forEach(function(p){var v=pvAcc[p];v.c=v.n>0?Math.round(v.b/v.n*1000)/10:0;});
+  M.forEach(function(m){if(!d[m])return;Object.entries(d[m].prov||{}).forEach(function(e){var p=e[0],v=e[1];if(!pvAcc[p])pvAcc[p]={n:0,b:0};pvAcc[p].n+=v.n;pvAcc[p].b+=v.b;});});
+  Object.keys(pvAcc).forEach(function(p){var v=pvAcc[p];v.c=v.n>0?r1(v.b/v.n*100):0;});
   var pvS=Object.entries(pvAcc).sort(function(a,b){return b[1].n-a[1].n;});
-  var pvJS=JSON.stringify(pvS.map(function(e){return{p:e[0],n:e[1].n,b:e[1].b,c:e[1].c};}));
-  var pvRows=pvS.map(function(e){var p=e[0],v=e[1];var col=v.c>=75?'#1b5e20;background:#e8f5e9':v.c>=65?'#e65100;background:#fff3e0':'#ad1457;background:#fce4ec';return '<tr><td><strong>'+p+'</strong></td><td>'+v.n+'</td><td>'+v.b+'</td><td>'+(v.n-v.b)+'</td><td><span style="color:'+col+';padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">'+v.c+'%</span></td></tr>';}).join('');
-
-  var mndRows=M.map(function(m){
-    var dm=d[m]; if(!dm) return '<tr><td>'+m+'</td><td colspan="5" style="color:#bbb">—</td></tr>';
-    var tg=MD[m].conv; var dv=Math.round((dm.conv-tg)*10)/10;
-    var col=dm.conv>=tg?'#27ae60':dm.conv>=65?'#e65100':'#ad1457';
-    var dcol=dv>=0?'#27ae60':'#e74c3c';
-    return '<tr><td>'+m+'</td><td>'+dm.n+'</td><td>'+dm.b+'</td><td style="font-weight:700;color:'+col+'">'+dm.conv+'%</td><td style="color:#888;font-size:11px">'+tg+'%</td><td style="color:'+dcol+';font-weight:700;font-size:11px">'+(dv>=0?'+':'')+dv+'%</td></tr>';
-  }).join('');
-
-  var nabRows=M.map(function(m){
-    var dm=d[m]; if(!dm) return '';
-    var col=dm.nc>=35?'#1b5e20':dm.nc>=20?'#e65100':'#ad1457';
-    var mail=dm.bom['Mail']||dm.bom['mail']||0; var bel=dm.bom['Bellen']||dm.bom['bellen']||0;
-    return '<tr><td>'+m+'</td><td>'+dm.nr+'</td><td>'+dm.nb+'</td><td>'+(dm.nr-dm.nb)+'</td><td style="font-weight:700;color:'+col+'">'+dm.nc+'%</td><td>'+mail+'</td><td>'+bel+'</td></tr>';
-  }).join('');
-
-  var allRed2={};
-  M.forEach(function(m){if(d[m])Object.entries(d[m].red||{}).forEach(function(e){allRed2[e[0]]=(allRed2[e[0]]||0)+e[1];});});
-  var redenRows2=Object.entries(allRed2).sort(function(a,b){return b[1]-a[1];}).map(function(e){
-    var per=M.map(function(m){return '<td>'+(d[m]?d[m].red[e[0]]||0:0)+'</td>';}).join('');
-    return '<tr><td>'+e[0]+'</td>'+per+'<td><strong>'+e[1]+'</strong></td></tr>';
-  }).join('');
-
-  var mjs=JSON.stringify(M);
-
-  return '<!DOCTYPE html>\n<html lang="nl">\n<head>\n<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">\n<title>'+adv+' — Dashboard raamdecoratie.com</title>\n'+
-  '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">\n'+
-  '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></'+'script>\n'+
-  '<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:"DM Sans",Arial,sans-serif;background:#F9F7F4;color:#2D2D2D;font-size:13px}.hdr{background:#2D2D2D;padding:0 22px;display:flex;align-items:center;justify-content:space-between;min-height:54px;gap:10px;flex-wrap:wrap}.brand{font-family:"DM Mono",monospace;font-size:14px;font-weight:500;color:#F59901}.name-badge{background:#F59901;color:#2D2D2D;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700}.period{font-size:11px;color:#888}.tabs{background:#fff;border-bottom:1.5px solid #eee;display:flex;overflow-x:auto;padding:0 16px}.tab{padding:10px 15px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;color:#999;white-space:nowrap;font-family:inherit}.tab.active{color:#F59901;border-bottom-color:#F59901}.tab:hover{color:#2D2D2D}.page{display:none;padding:18px 22px;max-width:1100px}.page.active{display:block}.sec{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#bbb;margin:18px 0 10px;display:flex;align-items:center;gap:8px}.sec::before{content:"";display:block;width:3px;height:13px;background:#F59901;border-radius:2px}.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:18px}.kpi{background:#fff;border-radius:11px;padding:14px 16px;border:1px solid #eee;position:relative;overflow:hidden}.kpi::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#eee}.kpi.ka::after{background:#F59901}.kpi.kg::after{background:#27ae60}.kpi.kr::after{background:#e74c3c}.klbl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}.kval{font-size:22px;font-weight:700;color:#2D2D2D;line-height:1.2}.ksub{font-size:10px;color:#bbb;margin-top:3px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}.card{background:#fff;border-radius:11px;padding:16px;border:1px solid #eee}.card.full{grid-column:1/-1}.ctitle{font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:11px}table{width:100%;border-collapse:collapse;font-size:12px}thead th{background:#2D2D2D;color:#fff;padding:7px 9px;text-align:left;font-size:11px;font-weight:500}tbody tr:nth-child(even){background:#fafafa}tbody tr:hover{background:#fff8ec}tbody td{padding:6px 9px;border-bottom:1px solid #f2f2f2}.tr-tot td{border-top:2px solid #2D2D2D;background:#f4f4f4!important;font-weight:700}.tl{margin-top:10px;padding-top:8px;border-top:1.5px dashed #F59901;font-size:11px;color:#F59901;font-weight:700}.scr{overflow-x:auto;margin-bottom:14px}@media(max-width:640px){.row2{grid-template-columns:1fr}.page{padding:12px}}</style>\n</head>\n<body>\n'+
-  '<div class="hdr"><div class="brand">raamdecoratie.com</div><div class="name-badge">'+adv+'</div><div class="period">'+M[0]+' – '+M[M.length-1]+'</div></div>\n'+
-  '<div class="tabs"><button class="tab active" onclick="sp(\'ov\',this)">📊 Mijn overzicht</button><button class="tab" onclick="sp(\'mnd\',this)">📅 Per maand</button><button class="tab" onclick="sp(\'rg\',this)">🗺️ Mijn regio\'s</button><button class="tab" onclick="sp(\'nab\',this)">📞 Nabellen</button></div>\n'+
-  // PAGE OV
-  '<div class="page active" id="p-ov">\n'+
-  '<div class="sec">Totaal overzicht '+M[0]+' t/m '+M[M.length-1]+'</div>\n'+
+  var mndR=M.map(function(m){var dm=d[m];if(!dm)return '<tr><td>'+m+'</td><td colspan="5" style="color:#bbb">\u2014</td></tr>';var tg=MD[m].conv;var dv=r1(dm.conv-tg);var col=dm.conv>=tg?GR:dm.conv>=65?'#e65100':'#ad1457';return '<tr><td>'+m+'</td><td>'+dm.n+'</td><td>'+dm.b+'</td><td style="font-weight:700;color:'+col+'">'+dm.conv+'%</td><td style="color:#888;font-size:11px">'+tg+'%</td><td style="color:'+(dv>=0?GR:RD)+';font-weight:700;font-size:11px">'+(dv>=0?'+':'')+dv+'%</td></tr>';}).join('');
+  var pvR=pvS.map(function(e){var p=e[0],v=e[1];var col=v.c>=75?'#1b5e20;background:#e8f5e9':v.c>=65?'#e65100;background:#fff3e0':'#ad1457;background:#fce4ec';return '<tr><td><strong>'+p+'</strong></td><td>'+v.n+'</td><td>'+v.b+'</td><td>'+(v.n-v.b)+'</td><td><span style="color:'+col+';padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700">'+v.c+'%</span></td></tr>';}).join('');
+  var cvJ=JSON.stringify(M.map(function(m){return d[m]?d[m].conv:0;}));
+  var tvJ=JSON.stringify(M.map(function(m){return MD[m].conv;}));
+  var wiJ=JSON.stringify(M.map(function(m){return d[m]?d[m].wi:0;}));
+  var wbJ=JSON.stringify(M.map(function(m){return d[m]?d[m].wb:0;}));
+  var bJ=JSON.stringify(M.map(function(m){return d[m]?d[m].b:0;}));
+  var nJ=JSON.stringify(M.map(function(m){return d[m]?d[m].niet:0;}));
+  var nbJ=JSON.stringify(M.map(function(m){return d[m]?d[m].nc:0;}));
+  var pvJ=JSON.stringify(pvS.map(function(e){return{p:e[0],n:e[1].n,b:e[1].b,c:e[1].c};}));
+  var allRd={};M.forEach(function(m){if(d[m])Object.entries(d[m].red||{}).forEach(function(e){allRd[e[0]]=(allRd[e[0]]||0)+e[1];});});
+  var rdJ=JSON.stringify(allRd);
+  var mJ=JSON.stringify(M);
+  var diffCol=diff>=0?GR:RD;
+  return '<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+adv+' \u2014 Dashboard</title>'+
+  '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">'+
+  '<scr'+'ipt src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></scr'+'ipt>'+
+  '<style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}body{font-family:"DM Sans",Arial,sans-serif;background:#F9F7F4;color:#2D2D2D;font-size:13px}.hdr{background:#2D2D2D;padding:0 22px;display:flex;align-items:center;justify-content:space-between;min-height:54px;gap:10px;flex-wrap:wrap}.brand{font-family:"DM Mono",monospace;font-size:14px;font-weight:500;color:#F59901}.nb{background:#F59901;color:#2D2D2D;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700}.tabs{background:#fff;border-bottom:1.5px solid #eee;display:flex;overflow-x:auto;padding:0 16px}.tab{padding:10px 15px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;border-bottom:2.5px solid transparent;color:#999;white-space:nowrap;font-family:inherit}.tab.active{color:#F59901;border-bottom-color:#F59901}.page{display:none;padding:18px 22px;max-width:1100px}.page.active{display:block}.sec{font-size:10px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#bbb;margin:18px 0 10px;display:flex;align-items:center;gap:8px}.sec::before{content:"";display:block;width:3px;height:13px;background:#F59901;border-radius:2px}.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin-bottom:18px}.kpi{background:#fff;border-radius:11px;padding:14px 16px;border:1px solid #eee;position:relative;overflow:hidden}.kpi::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:#eee}.kpi.ka::after{background:#F59901}.kpi.kg::after{background:#27ae60}.kpi.kr::after{background:#e74c3c}.klbl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}.kval{font-size:22px;font-weight:700;color:#2D2D2D;line-height:1.2}.ksub{font-size:10px;color:#bbb;margin-top:3px}.r2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px}.cc{background:#fff;border-radius:11px;padding:16px;border:1px solid #eee}.cc.full{grid-column:1/-1}.cct{font-size:10px;font-weight:700;color:#bbb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:11px}table{width:100%;border-collapse:collapse;font-size:12px}thead th{background:#2D2D2D;color:#fff;padding:7px 9px;text-align:left;font-size:11px;font-weight:500}tbody tr:nth-child(even){background:#fafafa}tbody td{padding:6px 9px;border-bottom:1px solid #f2f2f2}.tr-tot td{border-top:2px solid #2D2D2D;background:#f4f4f4!important;font-weight:700}.tl{margin-top:10px;padding-top:8px;border-top:1.5px dashed #F59901;font-size:11px;color:#F59901;font-weight:700}.scr{overflow-x:auto;margin-bottom:14px}@media(max-width:640px){.r2{grid-template-columns:1fr}.page{padding:12px}}</style>'+
+  '</head><body>'+
+  '<div class="hdr"><div class="brand">raamdecoratie.com</div><div class="nb">'+adv+'</div><span style="font-size:11px;color:#888">'+M[0]+' \u2013 '+M[M.length-1]+'</span></div>'+
+  '<div class="tabs"><button class="tab active" onclick="sp(\'ov\',this)">\ud83d\udcca Overzicht</button><button class="tab" onclick="sp(\'mn\',this)">\ud83d\udcc5 Per maand</button><button class="tab" onclick="sp(\'rg\',this)">\ud83d\uddfa\ufe0f Regio\'s</button><button class="tab" onclick="sp(\'nb\',this)">\ud83d\udcde Nabellen</button></div>'+
+  '<div class="page active" id="p-ov">'+
+  '<div class="sec">Totaal overzicht</div>'+
   '<div class="kg">'+
-  '<div class="kpi ka"><div class="klbl">Ingemeten</div><div class="kval">'+totN+'</div><div class="ksub">'+M.join(' + ')+'</div></div>'+
-  '<div class="kpi ka"><div class="klbl">Besteld</div><div class="kval">'+totB+'</div><div class="ksub">van '+totN+' metingen</div></div>'+
-  '<div class="kpi '+(totC>=teamGem?'kg':'kr')+'"><div class="klbl">Conversie</div><div class="kval" style="color:'+(totC>=teamGem?'#27ae60':'#e74c3c')+'">'+totC+'%</div><div class="ksub"><span style="color:'+diffCol+';font-weight:700">'+diffS+diff+'%</span> vs team ('+teamGem+'%)</div></div>'+
-  '<div class="kpi"><div class="klbl">Waarde ingemeten</div><div class="kval" style="font-size:18px">€'+Number(Math.round(totWi)).toLocaleString('nl-NL')+'</div></div>'+
-  '<div class="kpi"><div class="klbl">Waarde besteld</div><div class="kval" style="font-size:18px">€'+Number(Math.round(totWb)).toLocaleString('nl-NL')+'</div></div>'+
-  '</div>\n'+
-  '<div class="row2"><div class="card"><div class="ctitle">Conversie% — jij vs team</div><div style="position:relative;height:220px"><canvas id="cLine"></canvas></div></div>'+
-  '<div class="card"><div class="ctitle">Waarde ingemeten vs besteld</div><div style="position:relative;height:220px"><canvas id="cW"></canvas></div></div></div>\n'+
-  '<div class="sec">Samenvatting per maand</div>\n'+
-  '<table><thead><tr><th>Maand</th><th>Ingemeten</th><th>Besteld</th><th>Conv%</th><th>Team gem.</th><th>Verschil</th></tr></thead><tbody>'+mndRows+
-  '<tr class="tr-tot"><td>Totaal</td><td>'+totN+'</td><td>'+totB+'</td><td style="color:'+diffCol+';font-weight:700">'+totC+'%</td><td>'+teamGem+'%</td><td style="color:'+diffCol+';font-weight:700">'+diffS+diff+'%</td></tr>'+
-  '</tbody></table><div class="tl">Team gemiddelde: '+teamGem+'%</div>\n'+
-  '</div>\n'+
-  // PAGE MND
-  '<div class="page" id="p-mnd">\n'+
-  '<div class="sec">Per maand detail</div>\n'+
-  '<div class="row2"><div class="card full"><div class="ctitle">Besteld vs niet besteld per maand</div><div style="position:relative;height:250px"><canvas id="cBar"></canvas></div></div></div>\n'+
-  '</div>\n'+
-  // PAGE RG
-  '<div class="page" id="p-rg">\n'+
-  '<div class="sec">Mijn regio\'s — totaal alle maanden</div>\n'+
-  '<div class="row2"><div class="card full"><div class="ctitle">Conversie% per provincie</div><div style="position:relative;" id="pvWrap"><canvas id="cProv"></canvas></div></div></div>\n'+
-  '<div class="scr"><table><thead><tr><th>Provincie</th><th>Ingemeten</th><th>Besteld</th><th>Niet</th><th>Conv%</th></tr></thead><tbody>'+pvRows+'</tbody></table></div>\n'+
-  '</div>\n'+
-  // PAGE NAB
-  '<div class="page" id="p-nab">\n'+
-  '<div class="sec">Nabellen — jouw resultaten</div>\n'+
-  '<div class="row2"><div class="card"><div class="ctitle">Nabellen conv% per maand</div><div style="position:relative;height:220px"><canvas id="cNab"></canvas></div></div>'+
-  '<div class="card"><div class="ctitle">Redenen geen bestelling</div><div style="position:relative;height:220px"><canvas id="cReden"></canvas></div></div></div>\n'+
-  '<div class="scr"><table><thead><tr><th>Maand</th><th>Benaderd</th><th>Besteld na</th><th>Niet</th><th>Conv%</th><th>Mail</th><th>Bellen</th></tr></thead><tbody>'+nabRows+'</tbody></table></div>\n'+
-  '<div class="sec" style="margin-top:14px">Redenen per maand</div>\n'+
-  '<div class="scr"><table><thead><tr><th>Reden</th>'+M.map(function(m){return '<th>'+m+'</th>';}).join('')+'<th>Tot.</th></tr></thead><tbody>'+redenRows2+'</tbody></table></div>\n'+
-  '</div>\n'+
-  // SCRIPT
-  '<script>\n'+
-  'var M='+mjs+';\n'+
-  'var CV='+convVals+',TV='+teamVals+',WI='+wiVals+',WB='+wbVals+',BV='+bVals+',NV='+nVals+',NAB='+nabVals+',PD='+pvJS+';\n'+
-  'var O="#F59901",D2="#2D2D2D",L="#F9CD92",GR="#27ae60";\n'+
-  'function sp(id,el){document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});document.getElementById("p-"+id).classList.add("active");el.classList.add("active");}\n'+
-  'new Chart(document.getElementById("cLine"),{type:"line",data:{labels:M,datasets:[{label:"Jij",data:CV,borderColor:O,backgroundColor:O+"33",tension:.35,pointRadius:6,pointBackgroundColor:O,borderWidth:2.5},{label:"Team",data:TV,borderColor:D2,borderDash:[5,3],backgroundColor:"transparent",tension:.35,pointRadius:4,pointBackgroundColor:D2,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:11,font:{size:11}}}},scales:{y:{min:40,max:100,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}});\n'+
-  'new Chart(document.getElementById("cW"),{type:"bar",data:{labels:M,datasets:[{data:WI,backgroundColor:L},{data:WB,backgroundColor:O}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:"#f0f0f0"},ticks:{callback:function(v){return "\\u20AC"+Math.round(v/1000)+"k";}}}}}});\n'+
-  'new Chart(document.getElementById("cBar"),{type:"bar",data:{labels:M,datasets:[{label:"Besteld",data:BV,backgroundColor:O},{label:"Niet",data:NV,backgroundColor:D2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true},y:{stacked:true,grid:{color:"#f0f0f0"}}}}});\n'+
-  'var ph=Math.max(200,PD.length*38+60);document.getElementById("pvWrap").style.height=ph+"px";\n'+
-  'new Chart(document.getElementById("cProv"),{type:"bar",data:{labels:PD.map(function(x){return x.p;}),datasets:[{data:PD.map(function(x){return x.c;}),backgroundColor:PD.map(function(x){return x.c>=85?"#27ae60":x.c>=75?O:x.c>=65?"#f39c12":"#ef5350";})}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return PD[ctx.dataIndex].c+"% ("+PD[ctx.dataIndex].b+"/"+PD[ctx.dataIndex].n+")";}}}},scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+"%";}},grid:{color:"#f0f0f0"}},y:{ticks:{autoSkip:false}}}}});\n'+
-  'new Chart(document.getElementById("cNab"),{type:"bar",data:{labels:M,datasets:[{data:NAB,backgroundColor:O,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:60,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}})\n'+
-  'var ar={};M.forEach(function(m,i){var rd='+JSON.stringify(M.map(function(m){return d[m]?d[m].red:{};}))+'[i];Object.entries(rd||{}).forEach(function(e){ar[e[0]]=(ar[e[0]]||0)+e[1];});});\n'+
-  'var rs2=Object.entries(ar).sort(function(a,b){return b[1]-a[1];}).slice(0,8);\n'+
-  'new Chart(document.getElementById("cReden"),{type:"doughnut",data:{labels:rs2.map(function(x){return x[0].length>22?x[0].slice(0,22)+"...":x[0];}),datasets:[{data:rs2.map(function(x){return x[1];}),backgroundColor:["#2D2D2D","#F59901","#e74c3c","#95a5a6","#27ae60","#F9CD92","#9b59b6","#3498db"],borderWidth:2,borderColor:"#fff"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:10},boxWidth:10}}}}});\n'+
-  '</'+'script>\n</body>\n</html>';
+  '<div class="kpi ka"><div class="klbl">Ingemeten</div><div class="kval">'+tN+'</div></div>'+
+  '<div class="kpi ka"><div class="klbl">Besteld</div><div class="kval">'+tB+'</div><div class="ksub">van '+tN+' metingen</div></div>'+
+  '<div class="kpi '+(tC>=tGem?'kg':'kr')+'"><div class="klbl">Conversie</div><div class="kval" style="color:'+(tC>=tGem?GR:RD)+'">'+tC+'%</div><div class="ksub"><span style="color:'+diffCol+';font-weight:700">'+(diff>=0?'+':'')+diff+'%</span> vs team ('+tGem+'%)</div></div>'+
+  '<div class="kpi"><div class="klbl">Waarde ingemeten</div><div class="kval" style="font-size:18px">\u20ac'+Number(Math.round(tWi)).toLocaleString('nl-NL')+'</div></div>'+
+  '<div class="kpi"><div class="klbl">Waarde besteld</div><div class="kval" style="font-size:18px">\u20ac'+Number(Math.round(tWb)).toLocaleString('nl-NL')+'</div></div>'+
+  '</div>'+
+  '<div class="r2"><div class="cc"><div class="cct">Conv% \u2014 jij vs team</div><div style="height:220px"><canvas id="cL"></canvas></div></div>'+
+  '<div class="cc"><div class="cct">Waarde ingemeten vs besteld</div><div style="height:220px"><canvas id="cW"></canvas></div></div></div>'+
+  '<div class="sec">Per maand</div>'+
+  '<table><thead><tr><th>Maand</th><th>Ingemeten</th><th>Besteld</th><th>Conv%</th><th>Team gem.</th><th>Verschil</th></tr></thead><tbody>'+mndR+
+  '<tr class="tr-tot"><td>Totaal</td><td>'+tN+'</td><td>'+tB+'</td><td style="color:'+diffCol+';font-weight:700">'+tC+'%</td><td>'+tGem+'%</td><td style="color:'+diffCol+';font-weight:700">'+(diff>=0?'+':'')+diff+'%</td></tr>'+
+  '</tbody></table><div class="tl">Team gem.: '+tGem+'%</div></div>'+
+  '<div class="page" id="p-mn"><div class="sec">Per maand detail</div><div class="r2"><div class="cc full"><div class="cct">Besteld vs niet besteld</div><div style="height:250px"><canvas id="cBr"></canvas></div></div></div></div>'+
+  '<div class="page" id="p-rg"><div class="sec">Mijn regio\'s</div><div class="r2"><div class="cc full"><div class="cct">Conversie% per provincie</div><div id="pvW" style="position:relative"><canvas id="cPv"></canvas></div></div></div>'+
+  '<div class="scr"><table><thead><tr><th>Provincie</th><th>Ing.</th><th>Best.</th><th>Niet</th><th>Conv%</th></tr></thead><tbody>'+pvR+'</tbody></table></div></div>'+
+  '<div class="page" id="p-nb"><div class="sec">Nabellen</div><div class="r2"><div class="cc"><div class="cct">Nabellen conv%</div><div style="height:220px"><canvas id="cNb"></canvas></div></div><div class="cc"><div class="cct">Redenen</div><div style="height:220px"><canvas id="cRd"></canvas></div></div></div></div>'+
+  '<scr'+'ipt>'+
+  'var M='+mJ+',CV='+cvJ+',TV='+tvJ+',WI='+wiJ+',WB='+wbJ+',BV='+bJ+',NV='+nJ+',NAB='+nbJ+',PD='+pvJ+',RD='+rdJ+';'+
+  'var O="#F59901",DK="#2D2D2D",L="#F9CD92",GR="#27ae60",RDC="#e74c3c";'+
+  'function sp(id,el){document.querySelectorAll(".page").forEach(function(p){p.classList.remove("active");});document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});document.getElementById("p-"+id).classList.add("active");el.classList.add("active");}'+
+  'new Chart(document.getElementById("cL"),{type:"line",data:{labels:M,datasets:[{label:"Jij",data:CV,borderColor:O,backgroundColor:O+"33",tension:.35,pointRadius:6,pointBackgroundColor:O,borderWidth:2.5},{label:"Team",data:TV,borderColor:DK,borderDash:[5,3],backgroundColor:"transparent",tension:.35,pointRadius:4,pointBackgroundColor:DK,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"bottom",labels:{boxWidth:11,font:{size:11}}}},scales:{y:{min:40,max:100,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}});'+
+  'new Chart(document.getElementById("cW"),{type:"bar",data:{labels:M,datasets:[{data:WI,backgroundColor:L},{data:WB,backgroundColor:O}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:"#f0f0f0"},ticks:{callback:function(v){return "\\u20AC"+Math.round(v/1000)+"k";}}}}}});'+
+  'new Chart(document.getElementById("cBr"),{type:"bar",data:{labels:M,datasets:[{label:"Besteld",data:BV,backgroundColor:O},{label:"Niet",data:NV,backgroundColor:DK}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true},y:{stacked:true,grid:{color:"#f0f0f0"}}}}});'+
+  'var ph=Math.max(200,PD.length*38+60);document.getElementById("pvW").style.height=ph+"px";'+
+  'new Chart(document.getElementById("cPv"),{type:"bar",data:{labels:PD.map(function(x){return x.p;}),datasets:[{data:PD.map(function(x){return x.c;}),backgroundColor:PD.map(function(x){return x.c>=85?"#27ae60":x.c>=75?O:x.c>=65?"#f39c12":"#ef5350";})}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return PD[ctx.dataIndex].c+"% ("+PD[ctx.dataIndex].b+"/"+PD[ctx.dataIndex].n+")";}}}},scales:{x:{min:0,max:110,ticks:{callback:function(v){return v+"%";}},grid:{color:"#f0f0f0"}},y:{ticks:{autoSkip:false}}}}});'+
+  'new Chart(document.getElementById("cNb"),{type:"bar",data:{labels:M,datasets:[{data:NAB,backgroundColor:O,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:60,grid:{color:"#f0f0f0"},ticks:{callback:function(v){return v+"%";}}}}}});'+
+  'var rs=Object.entries(RD).sort(function(a,b){return b[1]-a[1];}).slice(0,8);'+
+  'new Chart(document.getElementById("cRd"),{type:"doughnut",data:{labels:rs.map(function(x){return x[0].length>22?x[0].slice(0,22)+"...":x[0];}),datasets:[{data:rs.map(function(x){return x[1];}),backgroundColor:["#2D2D2D","#F59901","#e74c3c","#95a5a6","#27ae60","#F9CD92","#9b59b6","#3498db"],borderWidth:2,borderColor:"#fff"}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:"right",labels:{font:{size:10},boxWidth:10}}}}});'+
+  '</scr'+'ipt></body></html>';
 }
 
-function dlAdv(adv){
-  var html=buildAdvHTML(adv);
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-  a.download=adv.toLowerCase()+'_dashboard.html';
-  a.click();
-}
-function dlAll(){
-  S.data.adviseurs.forEach(function(a,i){ setTimeout(function(){dlAdv(a);},i*500); });
-}
-function dlSelf(){
-  var html=document.documentElement.outerHTML;
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-  a.download='index.html'; a.click();
-}
+function dlAdv(adv){var html=buildAdvHTML(adv);var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));a.download=adv.toLowerCase()+'_dashboard.html';a.click();}
+function dlAll(){S.data.adviseurs.forEach(function(a,i){setTimeout(function(){dlAdv(a);},i*500);});}
+function dlSelf(){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([document.documentElement.outerHTML],{type:'text/html;charset=utf-8'}));a.download='index.html';a.click();}
 </script>
 </body>
 </html>
